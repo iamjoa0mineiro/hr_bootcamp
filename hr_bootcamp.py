@@ -13,21 +13,26 @@ from sklearn.preprocessing import MinMaxScaler
 # SECTION 2: Data Collection and Initial Processing
 # =================================================
 
+# ------------------------------------------
 # 2.1. Dataset Overview
+# ------------------------------------------
 hr = pd.read_csv('HR_Attrition_Dataset.csv')
 hr.head()
 
+# ------------------------------------------
 # 2.2. Data Description
+# ------------------------------------------
 data_types = hr.info()
 data_types
 
 data_description = hr.describe().transpose() 
 data_description
 
+# ------------------------------------------
 # 2.3. Data Preprocessing
+# ------------------------------------------
 
 # 2.3.1. This code let us have an idea of the unique values of each column. It is also possible to verify that there are no blanks.
-
 columns = list(hr.columns)
 
 for col in columns:
@@ -54,8 +59,24 @@ hr['AgeGroup'] = hr['Age'].apply(age_group)
 # SECTION 3: Exploratory Data Analysis (EDA)
 # ==========================================
 
+# ------------------------------------------
 # 3.1. Visualization
+# ------------------------------------------
+
 # 3.1.1. Company's Age Analysis
+
+# 3.1.1.1 Checking the summary of Ages
+age_summary = hr['Age'].describe()
+print(age_summary)
+
+plt.figure(figsize=(8, 6))
+sns.histplot(hr['Age'], kde=True, bins=15)
+plt.title('Age Distribution of Employees')
+plt.xlabel('Age')
+plt.ylabel('Frequency')
+plt.show()
+
+# 3.1.1.2 Percentage of Each Age Group in the Dataset
 age_group_percentage = hr['AgeGroup'].value_counts(normalize=True) * 100
 
 age_group_df = age_group_percentage.reset_index()
@@ -127,7 +148,9 @@ plt.show()
 # INSIGHT: This dataset includes a sample of 237 employees who left the company out of a total of 1,470 employees
 # Our main goal is to use machine learning algorithms to predict employee attrition and understand the reasons behind it in order to improve the company's KPIs
 
+# ------------------------------------------
 # 3.2. Univariate Data Analysis 
+# ------------------------------------------
 
 # Describing the data: Identifying measures like the mean, median, mode, variance, standard deviation, and range.
 hr.describe()
@@ -202,8 +225,93 @@ for j in range(i + 1, len(axes)):
 plt.tight_layout()
 plt.show()
 
+# ==========================================
 # 3.3. Bivariate Data Analysis
+# ==========================================
 
+# 3.3.1 Attrition vs. Categorical Variables
+
+# Attrition vs. Marital Status
+plt.figure(figsize=(10, 6))
+sns.countplot(data=hr, x='MaritalStatus', hue='Attrition', palette='viridis')
+plt.title('Attrition by Marital Status')
+plt.xlabel('Marital Status')
+plt.ylabel('Number of Employees')
+plt.show()
+# Insight: We can check that single employees have a higher likelihood of attrition compared to those who are married or divorced
+
+# Attrition vs. Business Travel
+plt.figure(figsize=(10, 6))
+sns.countplot(data=hr, x='BusinessTravel', hue='Attrition', palette='viridis')
+plt.title('Attrition by Business Travel Frequency')
+plt.xlabel('Business Travel')
+plt.ylabel('Number of Employees')
+plt.show()
+# Insight: Employees who travel frequently show a significant amount of attrition compared to those who rarely or do not travel at all
+
+# Attrition vs. Overtime
+plt.figure(figsize=(10, 6))
+sns.countplot(data=hr, x='OverTime', hue='Attrition', palette='viridis')
+plt.title('Attrition by Overtime Status')
+plt.xlabel('OverTime')
+plt.ylabel('Number of Employees')
+plt.show()
+# Insight: Employees who work overtime show a substantially higher level of attrition compared to those who do not
+
+# Attrition vs. JobRole
+plt.figure(figsize=(12, 6))
+sns.countplot(data=hr, x='JobRole', hue='Attrition', palette='viridis')
+plt.title('Attrition by Job Role')
+plt.xlabel('Job Role')
+plt.ylabel('Number of Employees')
+plt.xticks(rotation=45)
+plt.show()
+# Insight: Sales Representative, Laboratory Technician, Research Scientist and Sales Executive show a high count of employees leaving, while Managers and Research Directors show lower attrition rates
+
+# 3.3.2 Attrition vs. Numerical Variables (using Boxplots)
+
+# Attrition vs. Monthly Income
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=hr, x='Attrition', y='MonthlyIncome', palette='coolwarm')
+plt.title('Monthly Income by Attrition Status')
+plt.xlabel('Attrition')
+plt.ylabel('Monthly Income')
+plt.show()
+
+# Attrition vs. Years at Company
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=hr, x='Attrition', y='YearsAtCompany', palette='coolwarm')
+plt.title('Years at Company by Attrition Status')
+plt.xlabel('Attrition')
+plt.ylabel('Years at Company')
+plt.show()
+
+# Attrition vs. Total Working Years
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=hr, x='Attrition', y='TotalWorkingYears', palette='coolwarm')
+plt.title('Total Working Years by Attrition Status')
+plt.xlabel('Attrition')
+plt.ylabel('Total Working Years')
+plt.show()
+
+# 3.3.3 Pairwise Plots for Numerical Variables
+
+sns.pairplot(hr, hue='Attrition', vars=['Age', 'MonthlyIncome', 'YearsAtCompany', 'TotalWorkingYears'], palette='viridis')
+plt.show()
+
+# 3.3.4 Correlation Analysis
+
+# Select only the numeric columns from the DataFrame
+hr_numeric = hr.select_dtypes(include=['number'])
+
+plt.figure(figsize=(16, 12))
+sns.heatmap(hr_numeric.corr(), annot=True, cmap='coolwarm', linewidths=0.5)
+plt.title('Correlation Matrix of All Variables')
+plt.show()
+
+### -----------------TO BE CONTINUED ---------------------------###
+
+# -----------------------------------------------------------------
 # First, we need to convert our categorical data into numeric data
 
 vars_to_convert = [
@@ -263,5 +371,7 @@ scaled_X_test = scaler.transform(X_test)
 
 # Our data is now ready for machine learning to be applied!
 
-# 3.4. Feature Engeneering
+# ==========================================
+# SECTION 3.4: Feature Engineering
+# ==========================================
 

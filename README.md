@@ -13,7 +13,7 @@ Apenas algumas notas importantes:
 
 2. Exploratory Data Analysis (EDA):
 - Unvariate Analysis - !!!NOT DONE!!!
-- Bivariate and Multivariate Analysis - !!!NOT FINISHED!!! Fiz apenas heatmap
+- Bivariate and Multivariate Analysis - !!!NOT FINISHED!!! Fiz apenas heatmap. Raysa: Adicionei alguns gráficos e deixei o que estava embaixo, mas ainda vou terminar.
 - Visualization - DONE
 - Feature Engeneering - !!!NOT DONE!!!
 
