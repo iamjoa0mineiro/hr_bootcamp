@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import squarify
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
@@ -128,12 +129,78 @@ plt.show()
 
 # 3.2. Univariate Data Analysis 
 
+# Describing the data: Identifying measures like the mean, median, mode, variance, standard deviation, and range.
+hr.describe()
 
+# DROP EmployeeCount! Checking unique values of EmployeeCount. It's a constant column, it can be dropped.
+print(hr['EmployeeCount'].unique())
 
+# SET ID as the EmployeeNumber! Checking unique values of EmployeeNumber. It has 1470 distinct values, has no meaning for our analysis. Hence, it should be dropped.
+print(hr['EmployeeNumber'].nunique())
+hr.set_index('EmployeeNumber', inplace=True)
 
+# DROP StandardHours! Checking unique values. It's a constant column.
+print(hr['StandardHours'].unique())
 
+# DROPPING COLUMNS
+hr.drop(['EmployeeCount','StandardHours'], axis=1, inplace=True)
 
+# HISTOGRAMS - No outliers were identified
+# Select numerical columns
+numerical_columns = hr.select_dtypes(include=np.number).columns
+# Calculate the number of rows and columns needed for the subplots
+num_cols = 7
+num_rows = int(np.ceil(len(numerical_columns) / num_cols))
+# Initialize the subplots
+fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(30, num_rows * 5))
+# Flatten the axis array for easy iteration
+axes = axes.flatten()
+# Loop through each column and plot a histogram
+for i, column in enumerate(numerical_columns):    
+    # Add the histogram    
+    hr[column].hist(ax=axes[i], # Axis definition                  
+                            edgecolor='white', # Color of the border                    
+                            color='#AD60B8' # Color of the bins                   
+                           )    
+    # Add title and axis label    
+    axes[i].set_title(f'{column} Histogram')    
+    axes[i].set_xlabel(column)    
+    axes[i].set_ylabel('Frequency')
+# Remove any unused subplots
+for j in range(i+1, len(axes)):
+    fig.delaxes(axes[j])
+# Adjust layout
+plt.tight_layout()
+# Show the plot
+plt.show()
 
+#BOXPLOT
+# Select numerical columns
+numerical_columns = hr.select_dtypes(include=np.number).columns
+# Calculate the number of rows and columns needed for the subplots
+num_cols = 7
+num_rows = int(np.ceil(len(numerical_columns) / num_cols))
+# Initialize the subplots
+fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(30, num_rows * 5))
+# Flatten the axis array for easy iteration
+axes = axes.flatten()
+# Loop through each column and plot a box plot
+for i, column in enumerate(numerical_columns):    
+    # Add the box plot    
+    hr.boxplot(column=column, ax=axes[i], 
+               patch_artist=True,  # Use patch_artist to fill the box with color
+               boxprops=dict(facecolor='#AD60B8', color='black'))  # Box fill and edge color
+    
+    # Add title and axis label
+    axes[i].set_title(f'{column} Box Plot')
+    axes[i].set_xlabel(column)
+    axes[i].set_ylabel('Values')
+# Remove any unused subplots
+for j in range(i + 1, len(axes)):
+    fig.delaxes(axes[j])
+# Adjust layout
+plt.tight_layout()
+plt.show()
 
 # 3.3. Bivariate Data Analysis
 
