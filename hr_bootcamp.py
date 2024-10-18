@@ -2,6 +2,7 @@
 # SECTION 1: Import needed libraries
 # ===========================================
 import pandas as pd
+import polars as pl
 import matplotlib.pyplot as plt
 import seaborn as sns
 import squarify
@@ -9,6 +10,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from scipy import stats
+from scipy.stats import chi2_contingency
 
 # =================================================
 # SECTION 2: Data Collection and Initial Processing
@@ -249,7 +251,7 @@ hr.drop(index=outlier_employee_numbers, inplace=True)
 # 3.3. Bivariate Data Analysis
 # ==========================================
 
-# 3.3.1 Attrition vs. Categorical Variables
+# 3.3.1 Attrition vs. Ordinal Variables
 
 # Attrition vs. Marital Status
 plt.figure(figsize=(10, 6))
@@ -288,7 +290,33 @@ plt.xticks(rotation=45)
 plt.show()
 # Insight: Sales Representative, Laboratory Technician, Research Scientist and Sales Executive show a high count of employees leaving, while Managers and Research Directors show lower attrition rates
 
-# 3.3.2 Attrition vs. Numerical Variables (using Boxplots)
+# 3.3.2 Chi-Square Test for All Ordinal Variables
+
+ordinal_cols = [
+    "BusinessTravel", "Department", "Education", "EducationField",
+    "EnvironmentSatisfaction", "Gender", "JobInvolvement", "JobLevel",
+    "JobRole", "JobSatisfaction", "MaritalStatus", "OverTime",
+    "PerformanceRating", "RelationshipSatisfaction", "WorkLifeBalance"
+]
+
+# Iterate through all ordinal variables and calculate chi-square
+for col in ordinal_cols:
+    # Create a contingency table
+    contingency_table = pd.crosstab(hr[col], hr['Attrition'])
+    # Perform chi-square test
+    chi2, p, dof, expected = chi2_contingency(contingency_table)
+    
+    # Print the results in scientific notation for the p-value
+    print(f"Chi-square Statistic for {col}: {chi2:.2f}, p-value: {p:.2e}")
+    if p < 0.05:
+        print(f"Significant relationship between {col} and Attrition\n")
+    else:
+        print(f"No significant relationship between {col} and Attrition\n")
+
+# Insight: OverTime, JobRole, JobLevel and MaritalStatus are the most significant predictors, with OverTime standing out as particularly important
+# Education, Gender, PerformanceRating and RelationshipSatisfaction doesn't have a significant impact
+
+# 3.3.3 Attrition vs. Numerical Variables (using Boxplots)
 
 # Attrition vs. Monthly Income
 plt.figure(figsize=(12, 6))
@@ -297,6 +325,8 @@ plt.title('Monthly Income by Attrition Status')
 plt.xlabel('Attrition')
 plt.ylabel('Monthly Income')
 plt.show()
+# Insight: Employees who left the company tend to have lower monthly income
+# There are much more outliers for "No Attrition" indicating that higher monthly incomes might encourage employees to stay
 
 # Attrition vs. Years at Company
 plt.figure(figsize=(12, 6))
@@ -305,6 +335,8 @@ plt.title('Years at Company by Attrition Status')
 plt.xlabel('Attrition')
 plt.ylabel('Years at Company')
 plt.show()
+# Insight: Employees who left the company tend to have a shorter period at the company compared to those who stayed
+# Employees who left have spent fewer years (typically less than 5) at the company
 
 # Attrition vs. Total Working Years
 plt.figure(figsize=(12, 6))
@@ -313,6 +345,7 @@ plt.title('Total Working Years by Attrition Status')
 plt.xlabel('Attrition')
 plt.ylabel('Total Working Years')
 plt.show()
+# Insight: Employees with a longer career history tend to stay and those with fewer total working years are more likely to leave
 
 # 3.3.3 Pairwise Plots for Numerical Variables
 
@@ -328,8 +361,10 @@ plt.figure(figsize=(16, 12))
 sns.heatmap(hr_numeric.corr(), annot=True, cmap='coolwarm', linewidths=0.5)
 plt.title('Correlation Matrix of All Variables')
 plt.show()
-
-### -----------------TO BE CONTINUED ---------------------------###
+# Feature Selection - Given the high correlation:
+# JobLevel and MonthlyIncome (0.95): Exclude MonthlyIncome
+# YearsInCurrentRole and YearsAtCompany (0.79): Exclude YearsAtCompany
+# Check the others and decide together
 
 # -----------------------------------------------------------------
 # First, we need to convert our categorical data into numeric data
