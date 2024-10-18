@@ -12,7 +12,7 @@ Apenas algumas notas importantes:
 - Preprocessing - DONE
 
 2. Exploratory Data Analysis (EDA):
-- Unvariate Analysis - !!!NOT DONE!!!
+- Unvariate Analysis - DONE - Removeu-se 83 outliers depois de fazer análise com z-score
 - Bivariate and Multivariate Analysis - !!!NOT FINISHED!!! Fiz apenas heatmap. Raysa: Adicionei alguns gráficos e deixei o que estava embaixo, mas ainda vou terminar.
 - Visualization - DONE
 - Feature Engeneering - !!!NOT DONE!!!

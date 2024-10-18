@@ -8,6 +8,7 @@ import squarify
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from scipy import stats
 
 # =================================================
 # SECTION 2: Data Collection and Initial Processing
@@ -197,7 +198,7 @@ plt.tight_layout()
 # Show the plot
 plt.show()
 
-#BOXPLOT
+#BOXPLOT - Appears to have outliers on MonthlyIncome, TotalWorkingYears, TrainingTimesLastYear, YearsAtCompany, YearsInCurrentRole, YearsSinceLastPromotion, YearsWithCurrManager
 # Select numerical columns
 numerical_columns = hr.select_dtypes(include=np.number).columns
 # Calculate the number of rows and columns needed for the subplots
@@ -224,6 +225,25 @@ for j in range(i + 1, len(axes)):
 # Adjust layout
 plt.tight_layout()
 plt.show()
+
+#Checking outliers with z-score in: MonthlyIncome, TotalWorkingYears, TrainingTimesLastYear, YearsAtCompany, YearsInCurrentRole, YearsSinceLastPromotion, YearsWithCurrManager
+
+#Create dataframe with the z-scores of the columns above
+variables = ['MonthlyIncome', 'TotalWorkingYears', 'TrainingTimesLastYear',
+             'YearsAtCompany', 'YearsInCurrentRole', 'YearsSinceLastPromotion',
+             'YearsWithCurrManager']
+hr_zscores = pd.DataFrame()
+for column in variables:
+    hr_zscores[column + '_zscore'] = stats.zscore(hr[column])
+
+#Verify z-scores between -3 and 3
+hr_zscores.describe()
+
+#From the describe function columns: TotalWorkingYears, YearsAtCompany, YearsInCurrentRole, YearsSinceLastPromotion, YearsWithCurrManager have outliers.
+outliers = hr_zscores[(hr_zscores > 3) | (hr_zscores < -3)].dropna(how='all')
+#We have 83 outliers according to this, we'll remove them.
+outlier_employee_numbers = hr_zscores[(hr_zscores > 3) | (hr_zscores < -3)].dropna(how='all').index
+hr.drop(index=outlier_employee_numbers, inplace=True)
 
 # ==========================================
 # 3.3. Bivariate Data Analysis
