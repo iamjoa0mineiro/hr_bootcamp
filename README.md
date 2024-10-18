@@ -1,6 +1,11 @@
 # hr_bootcamp
 HR Bootcamp 2024
 
+# Instalações a serem realizadas no terminal:
+pip install matplotlib seaborn squarify scikit-learn scipy
+pip install polars
+pip install scipy polars
+
 12/10/2024 - João Mineiro
 
 Boas malta, tentei deixar o código documentado ao máximo com comentários. Se puderem façam o mesmo!
