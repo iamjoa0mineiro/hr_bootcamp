@@ -6,6 +6,12 @@ pip install matplotlib seaborn squarify scikit-learn scipy
 pip install polars
 pip install scipy polars
 
+# Instalações a serem realizadas no terminal:
+matplotlib 3.8.0
+pandas 2.1.4
+seaborn 0.12.2
+numpy 1.26.4
+
 12/10/2024 - João Mineiro
 
 Boas malta, tentei deixar o código documentado ao máximo com comentários. Se puderem façam o mesmo!
