@@ -245,7 +245,7 @@ hr_zscores.describe()
 outliers = hr_zscores[(hr_zscores > 3) | (hr_zscores < -3)].dropna(how='all')
 #We have 83 outliers according to this, we'll remove them.
 outlier_employee_numbers = hr_zscores[(hr_zscores > 3) | (hr_zscores < -3)].dropna(how='all').index
-hr.drop(index=outlier_employee_numbers, inplace=True)
+hr_nout = hr.drop(index=outlier_employee_numbers)
 
 # ==========================================
 # 3.3. Bivariate Data Analysis
@@ -389,10 +389,6 @@ hr.drop(vars_to_convert, axis=1, inplace=True)
 hr_new = hr.merge(how='left', left_index=True, right_index=True, validate='one_to_one', right=hr_dummies)
 
 # Correlation Matrix
-corr_matrix = hr_new.corr()
-corr_matrix = corr_matrix[(corr_matrix > 0.7) | (corr_matrix < -0.7)]
-sns.heatmap(corr_matrix)
-plt.show()
 
 # INSIGHTS: 
 
