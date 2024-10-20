@@ -253,42 +253,40 @@ hr_nout = hr.drop(index=outlier_employee_numbers)
 
 # 3.3.1 Attrition vs. Ordinal Variables
 
+#Create function for the plots
+def perc_barplots(column):
+    attrition = hr.groupby([column, 'Attrition']).size().reset_index(name='Count')
+    # First, calculate the sum of 'Count' for each value of column
+    total_count_by_status = attrition.groupby(column)['Count'].transform('sum')
+    # Then, calculate the percentage for each row
+    attrition['Percentage'] = attrition['Count'] / total_count_by_status * 100
+    #Only need the percentage for the attrition and can drop columns not need. Also sorted by percentage for the plot
+    attrition = attrition[attrition['Attrition'] == 1].drop(columns=['Attrition','Count']).sort_values(by='Percentage')
+    #Compilate plot
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=attrition, x=column, y='Percentage', palette='viridis')
+    plt.title(f'% of Attrition per {column}')
+    plt.xlabel(column)
+    plt.xticks(rotation=45)
+    plt.ylabel('% of Attrition')
+    plt.show()
+
 # Attrition vs. Marital Status
-plt.figure(figsize=(10, 6))
-sns.countplot(data=hr, x='MaritalStatus', hue='Attrition', palette='viridis')
-plt.title('Attrition by Marital Status')
-plt.xlabel('Marital Status')
-plt.ylabel('Number of Employees')
-plt.show()
+perc_barplots('MaritalStatus')
 # Insight: We can check that single employees have a higher likelihood of attrition compared to those who are married or divorced
 
 # Attrition vs. Business Travel
-plt.figure(figsize=(10, 6))
-sns.countplot(data=hr, x='BusinessTravel', hue='Attrition', palette='viridis')
-plt.title('Attrition by Business Travel Frequency')
-plt.xlabel('Business Travel')
-plt.ylabel('Number of Employees')
-plt.show()
+perc_barplots('BusinessTravel')
 # Insight: Employees who travel frequently show a significant amount of attrition compared to those who rarely or do not travel at all
 
 # Attrition vs. Overtime
-plt.figure(figsize=(10, 6))
-sns.countplot(data=hr, x='OverTime', hue='Attrition', palette='viridis')
-plt.title('Attrition by Overtime Status')
-plt.xlabel('OverTime')
-plt.ylabel('Number of Employees')
-plt.show()
+perc_barplots('OverTime')
 # Insight: Employees who work overtime show a substantially higher level of attrition compared to those who do not
 
 # Attrition vs. JobRole
-plt.figure(figsize=(12, 6))
-sns.countplot(data=hr, x='JobRole', hue='Attrition', palette='viridis')
-plt.title('Attrition by Job Role')
-plt.xlabel('Job Role')
-plt.ylabel('Number of Employees')
-plt.xticks(rotation=45)
-plt.show()
+perc_barplots('JobRole')
 # Insight: Sales Representative, Laboratory Technician, Research Scientist and Sales Executive show a high count of employees leaving, while Managers and Research Directors show lower attrition rates
+# Insight: Based on above analysis, MaritalStatus, BusinessTravel, Overtime and JobRole might be important features for the model
 
 # 3.3.2 Chi-Square Test for All Ordinal Variables
 

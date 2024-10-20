@@ -12,6 +12,9 @@ pandas 2.2.3
 seaborn 0.13.2
 numpy 2.1.2
 
+# Notas para o modelo:
+Outliers - correr código com e sem outliers
+
 12/10/2024 - João Mineiro
 
 Boas malta, tentei deixar o código documentado ao máximo com comentários. Se puderem façam o mesmo!
