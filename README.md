@@ -27,7 +27,7 @@ Apenas algumas notas importantes:
 
 2. Exploratory Data Analysis (EDA):
 - Unvariate Analysis - DONE - Removeu-se 83 outliers depois de fazer análise com z-score
-- Bivariate and Multivariate Analysis - !!!NOT FINISHED!!! Fiz apenas heatmap. Raysa: Adicionei alguns gráficos e deixei o que estava embaixo, mas ainda vou terminar.
+- Bivariate and Multivariate Analysis - DONE -  Fiz apenas heatmap. Raysa: Adicionei alguns gráficos e deixei o que estava embaixo, mas ainda vou terminar. João Grade: Corri DecisionTrees para ver quais remover face a correlation analysis e corri embedded e wrapped methods para ver quais as variáveis a remover. 
 - Visualization - DONE
 - Feature Engeneering - !!!NOT DONE!!!
 

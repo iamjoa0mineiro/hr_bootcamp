@@ -11,6 +11,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from scipy import stats
 from scipy.stats import chi2_contingency
+from sklearn.feature_selection import RFE # wrapper method
+from sklearn.linear_model import LogisticRegression #(This is one possible model to apply inside RFE)
+from sklearn.linear_model import LassoCV # embedded method
+from sklearn.tree import DecisionTreeClassifier # embedded method
+from sklearn.model_selection import StratifiedKFold
 
 # =================================================
 # SECTION 2: Data Collection and Initial Processing
@@ -362,7 +367,106 @@ plt.show()
 # Feature Selection - Given the high correlation:
 # JobLevel and MonthlyIncome (0.95): Exclude MonthlyIncome
 # YearsInCurrentRole and YearsAtCompany (0.79): Exclude YearsAtCompany
-# Check the others and decide together
+# Check the others and decide together 
+
+# 3.3.5 Feature Selection
+
+#Each test applied will be ran three times
+
+skf = StratifiedKFold(n_splits = 3, random_state = 99, shuffle = True)
+
+#To check which variables to remove from the Correlation Analysis we'll apply a Decision Tree to see feature importance
+
+X = hr_numeric.drop('Attrition', axis = 1)
+y = hr_numeric['Attrition'].copy()
+
+def plot_importance(variables,name):
+    imp_features = variables.sort_values()
+    plt.figure(figsize=(4,5))
+    imp_features.plot(kind = "barh")
+    plt.title("Feature importance using " + name + " Model")
+    plt.show()
+
+def apply_dt(X_train, y_train):
+    dt = DecisionTreeClassifier(random_state = 99).fit(X_train, y_train)
+    feature_importances = pd.Series(dt.feature_importances_, index = X_train.columns)
+    plot_importance(feature_importances, 'DT')
+
+def select_best_features_dt(X, y):
+    count = 1
+    for train_index, val_index in skf.split(X,y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+        ######################################### SELECT FEATURES #################################################
+        print('_________________________________________________________________________________________________\n')
+        print('                                     SPLIT ' + str(count) + '                                    ')
+        print('_________________________________________________________________________________________________')
+
+        # check which features to use using decision Tree
+        apply_dt(X_train, y_train)
+
+        count+=1
+
+
+select_best_features_dt(X, y)
+
+#According to the three splits, the variables that should be removed are JobLevel and YearsInCurrentRole as these have less importance considering their counterparts
+
+X = X.drop(['JobLevel','YearsInCurrentRole'], axis = 1)
+
+#Now we'll run three tests for feature selection: RFE, Lasso and Decision Trees:
+def apply_rfe(X_train, y_train):
+    rfe = RFE(estimator = LogisticRegression(), n_features_to_select = 5)
+    rfe.fit_transform(X = X_train, y = y_train)
+    selected_features = pd.Series(rfe.support_, index = X_train.columns)
+    print(selected_features)
+
+def apply_lasso(X_train, y_train):
+    lasso = LassoCV().fit(X_train, y_train)
+    coef = pd.Series(lasso.coef_, index = X_train.columns)
+    plot_importance(coef,'Lasso')
+
+def select_best_features(X,y):
+    count = 1
+    for train_index, val_index in skf.split(X,y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+        ########################################### SCALE DATA ####################################################
+        scaler = MinMaxScaler().fit(X_train)
+        X_train_scaled = scaler.transform(X_train)
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns = X_train.columns)
+
+        ######################################### SELECT FEATURES #################################################
+        print('_________________________________________________________________________________________________\n')
+        print('                                     SPLIT ' + str(count) + '                                    ')
+        print('_________________________________________________________________________________________________')
+
+        # Check which features to use using RFE
+        print('')
+        print('----------------- RFE ----------------------')
+        apply_rfe(X_train_scaled, y_train)
+
+        # check which features to use using lasso
+        print('')
+        print('----------------- LASSO ----------------------')
+        apply_lasso(X_train_scaled, y_train)
+
+        # check which features to use using lasso
+        print('')
+        print('----------------- DT ----------------------')
+        apply_dt(X_train_scaled, y_train)
+
+        count+=1
+
+#Given the information on this test:
+# Remove: Education, PerformanceRating, RelationshipSatisfaction and YearsAtCompany
+# Test with and without: HourlyRate, JobSatisfaction, MonthlyRate, PercentSalaryHike, TrainingTimesLastYear, WorkLifeBalance
+#The other numerical and categorical variables, KEEP. 
+
+
+
 
 # -----------------------------------------------------------------
 # First, we need to convert our categorical data into numeric data
