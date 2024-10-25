@@ -15,7 +15,13 @@ from sklearn.linear_model import LassoCV # embedded method
 from sklearn.tree import DecisionTreeClassifier # embedded method
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import SelectKBest, chi2 
-from sklearn.feature_selection import VarianceThreshold 
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline
+from collections import Counter
+
 
 # =================================================
 # SECTION 2: Data Collection and Initial Processing
@@ -70,10 +76,6 @@ hr['AgeGroup'] = hr['Age'].apply(age_group)
 # Encode 'AgeGroup' using ordinal mapping
 age_group_mapping = {'Young Adults': 1, 'Mid Age': 2, 'Elderly': 3}
 hr['AgeGroup'] = hr['AgeGroup'].map(age_group_mapping)
-
-# Drop 'Age' after creating 'AgeGroup' since it's redundant
-if 'Age' in hr.columns:
-    hr.drop(columns=['Age'], inplace=True)
 
 # Verify the dataset after encoding
 print(hr.info())
@@ -162,47 +164,64 @@ plt.show()
 # ------------------------------------------
 # 3.2.1. Visualize Data Distribution (Histograms)
 # ------------------------------------------
+
+# Set the style for better visualization
+sns.set_theme(style="whitegrid")
+
+# Drop 'AgeGroup' after it is used and retain 'Age' for future analysis
+hr.drop(columns=['AgeGroup'], inplace=True)
+
 # Select Numerical Columns
 numerical_columns = hr.select_dtypes(include=np.number).columns
 
-# Determine the Layout for Histograms
-num_cols = 7
+# Determine the Layout for Enhanced Histograms
+num_cols = 5  # Reduced the number of columns for better plot size and spacing
 num_rows = int(np.ceil(len(numerical_columns) / num_cols))
-fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(30, num_rows * 5))
+fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(25, num_rows * 5))
 axes = axes.flatten()
 
-# Plotting Histograms for Each Numerical Column
+# Plotting Enhanced Histograms for Each Numerical Column
 for i, column in enumerate(numerical_columns):
-    hr[column].hist(ax=axes[i], edgecolor='white', color='#AD60B8')
-    axes[i].set_title(f'{column} Histogram')
-    axes[i].set_xlabel(column)
-    axes[i].set_ylabel('Frequency')
+    sns.histplot(data=hr, x=column, ax=axes[i], bins=20, color='#7E57C2', edgecolor='black')
+    axes[i].set_title(f'{column} Distribution', fontsize=14, weight='bold')
+    axes[i].set_xlabel(column, fontsize=12)
+    axes[i].set_ylabel('Frequency', fontsize=12)
+    axes[i].grid(True, linestyle='--', alpha=0.6)
 
-# Remove unused subplots
+# Remove unused subplots for clarity
 for j in range(i + 1, len(axes)):
     fig.delaxes(axes[j])
 
-# Display the Final Layout of Histograms
+# Adjust Layout and Display the Enhanced Histograms
 plt.tight_layout()
 plt.show()
 
 # ------------------------------------------
 # 3.2.2. Boxplot Analysis for Outlier Detection
 # ------------------------------------------
-fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(30, num_rows * 5))
+
+# Update numerical columns after dropping 'AgeGroup'
+numerical_columns = hr.select_dtypes(include=np.number).columns
+
+# Determine the Layout for Enhanced Boxplots
+num_cols = 5  # Reduce the number of columns for better spacing
+num_rows = int(np.ceil(len(numerical_columns) / num_cols))
+fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(25, num_rows * 5))
 axes = axes.flatten()
 
-# Loop Through Numerical Columns and Plot Boxplots
+# Loop Through Numerical Columns and Plot Enhanced Boxplots
 for i, column in enumerate(numerical_columns):
-    hr.boxplot(column=column, ax=axes[i], patch_artist=True, boxprops=dict(facecolor='#AD60B8', color='black'))
-    axes[i].set_title(f'{column} Box Plot')
-    axes[i].set_xlabel(column)
-    axes[i].set_ylabel('Values')
+    sns.boxplot(data=hr, y=column, ax=axes[i], color='#7E57C2', fliersize=5, linewidth=1.5)  # Updated box color to '#FF7043'
+    axes[i].set_title(f'{column} Box Plot', fontsize=14, weight='bold')
+    axes[i].set_xlabel(column, fontsize=12)
+    axes[i].set_ylabel('Values', fontsize=12)
+    axes[i].grid(axis='y', linestyle='--', alpha=0.6)
 
-# Remove unused subplots
+# Remove unused subplots for clarity
 for j in range(i + 1, len(axes)):
     fig.delaxes(axes[j])
 
+# Adjust Layout and Display the Enhanced Boxplots
 plt.tight_layout()
 plt.show()
 
@@ -347,9 +366,144 @@ attrition_boxplot('YearsSinceLastPromotion')
 attrition_boxplot('YearsWithCurrManager')
 # Insight: Employees with fewer years with their current manager show a higher tendency to leave.
 
-# ==========================================
+ #==========================================
 # SECTION 4: Feature Selection
 # ==========================================
 
+#-------------------------------------------
+# 4.1. Splitting the Dataset
+#-------------------------------------------
 
+# Define Features (X) and Target (y)
+X = hr.drop(columns=['Attrition'])
+y = hr['Attrition']
 
+# Split into Train and Test Sets (70% training, 30% testing)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+
+#-------------------------------------------
+# 4.2. Chi-Square for Categorical Variables
+#-------------------------------------------
+
+# Define StratifiedKFold for Cross-Validation
+skf = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
+
+# Select categorical features for Chi-Square test
+categorical_features = X_train.select_dtypes(include='object').columns
+
+def apply_chisquare(X, y, var, alpha=0.05):
+    dfObserved = pd.crosstab(y, X)
+    chi2, p, _, _ = stats.chi2_contingency(dfObserved.values)
+    if p < alpha:
+        result = f"{var} is IMPORTANT for Prediction"
+    else:
+        result = f"{var} is NOT an important predictor (Discard {var} from model)"
+    print(result)
+    return p < alpha
+
+def select_best_cat_features(X, y):
+    selected_features = []
+    count = 1
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+        print(f'----- CHI-SQUARE SPLIT {count} -----')
+        X_train_cat = X_train[categorical_features].copy()
+        
+        for var in X_train_cat:
+            if apply_chisquare(X_train_cat[var], y_train, var):
+                if var not in selected_features:
+                    selected_features.append(var)
+        count += 1
+    
+    return selected_features
+
+# Apply Chi-Square and get selected features
+selected_categorical_features = select_best_cat_features(X_train, y_train)
+
+# Keep only selected categorical features
+X_train = X_train[selected_categorical_features + list(X_train.select_dtypes(include=[np.number]).columns)]
+X_test = X_test[selected_categorical_features + list(X_test.select_dtypes(include=[np.number]).columns)]
+
+#-------------------------------------------
+# 4.3. Encoding Categorical Variables
+#-------------------------------------------
+
+# One-Hot Encode the selected categorical features
+X_train_encoded = pd.get_dummies(X_train, columns=selected_categorical_features, drop_first=True)
+X_test_encoded = pd.get_dummies(X_test, columns=selected_categorical_features, drop_first=True)
+
+# Align the test set with the training set after encoding
+X_test_encoded = X_test_encoded.reindex(columns=X_train_encoded.columns, fill_value=0)
+
+# Update features to encoded versions
+X_train, X_test = X_train_encoded, X_test_encoded
+
+#-------------------------------------------
+# 4.4. Applying SMOTE to Training Data
+#-------------------------------------------
+
+from imblearn.over_sampling import SMOTE
+
+# Define SMOTE object and Apply SMOTE to training data to balance the classes
+smote = SMOTE(sampling_strategy='minority', random_state=42)
+X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+# Print Resampled Data Sizes
+print(f'Original Training Set Size: {X_train.shape}')
+print(f'SMOTE Resampled Training Set Size: {X_train_smote.shape}')
+
+#-------------------------------------------
+# 4.5. Spearman Correlation Analysis
+#-------------------------------------------
+
+# Update numerical columns after SMOTE
+numerical_columns = X_train_smote.select_dtypes(include=[np.number]).columns
+
+# Apply Spearman Correlation to detect multicollinearity among numerical variables
+def cor_heatmap_v2(cor, threshold=0.3):
+    # Filter out low correlations based on the threshold
+    mask = np.abs(cor) < threshold
+    cor_filtered = cor.copy()
+    cor_filtered[mask] = 0
+
+    plt.figure(figsize=(20, 16))  # Increase figure size
+    sns.heatmap(data=cor_filtered, 
+                annot=True, 
+                cmap='coolwarm', 
+                fmt='.2f', 
+                linewidths=0.5, 
+                linecolor='gray',
+                mask=(cor_filtered == 0),  # Only show correlations above the threshold
+                cbar_kws={'shrink': 0.8}, 
+                square=True,
+                annot_kws={'size': 8})  # Reduce font size for annotations
+    
+    plt.xticks(rotation=90, fontsize=10)  # Rotate and reduce font size of x labels
+    plt.yticks(fontsize=10)                # Reduce font size of y labels
+    plt.title("Spearman Correlation Heatmap (Filtered for Correlations > |0.3|)", fontsize=16, weight='bold')
+    plt.show()
+
+def apply_correlation_v2(X_train):
+    correlation_data = X_train.copy()
+    # Compute Spearman Correlation
+    matrix = correlation_data.corr(method='spearman', numeric_only=True)
+    # Plot Correlation Heatmap with threshold filtering
+    cor_heatmap_v2(matrix)
+
+# Apply correlation analysis to identify highly correlated features
+apply_correlation_v2(X_train_smote)
+
+# INSIGHT: The features 'YearsInCurrentRole', 'YearsWithCurrManager', and 'JobLevel' were dropped to reduce multicollinearity:
+# - 'YearsInCurrentRole' (correlation with 'YearsAtCompany': 0.88)
+# - 'YearsWithCurrManager' (correlation with 'YearsAtCompany': 0.86, correlation with 'YearsInCurrentRole': 0.78)
+# - 'JobLevel' (correlation with 'TotalWorkingYears': 0.74)
+# 'YearsAtCompany' was chosen over 'YearsInCurrentRole' and 'YearsWithCurrManager' because it provides a more comprehensive measure of an employee's tenure.
+# 'TotalWorkingYears' was preferred over 'JobLevel' as it gives a more detailed view of an employee's experience, allowing the model to capture more nuanced relationships.
+
+# Drop correlated features
+X_train_smote = X_train_smote.drop(columns=['YearsInCurrentRole', 'YearsWithCurrManager', 'JobLevel'])
+
+# ------------------------------------------
+# 4.6. Variance
+# ------------------------------------------
