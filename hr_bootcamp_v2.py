@@ -421,17 +421,56 @@ def select_best_cat_features(X, y):
 # Apply Chi-Square and get selected features
 selected_categorical_features = select_best_cat_features(X_train, y_train)
 
-# Keep only selected categorical features
-X_train = X_train[selected_categorical_features + list(X_train.select_dtypes(include=[np.number]).columns)]
-X_test = X_test[selected_categorical_features + list(X_test.select_dtypes(include=[np.number]).columns)]
-
 #-------------------------------------------
-# 4.3. Encoding Categorical Variables
+# 4.4. Spearman Correlation for Numerical Features Before Encoding and SMOTE
 #-------------------------------------------
 
-# One-Hot Encode the selected categorical features
-X_train_encoded = pd.get_dummies(X_train, columns=selected_categorical_features, drop_first=True)
-X_test_encoded = pd.get_dummies(X_test, columns=selected_categorical_features, drop_first=True)
+# Select numerical columns only for Spearman Correlation analysis
+numerical_columns = X_train.select_dtypes(include=[np.number]).columns
+
+def cor_heatmap_before_encoding(cor, threshold=0.3):
+    # Filter out low correlations based on the threshold
+    mask = np.abs(cor) < threshold
+    cor_filtered = cor.copy()
+    cor_filtered[mask] = 0
+
+    plt.figure(figsize=(20, 16))  # Increase figure size for better readability
+    sns.heatmap(data=cor_filtered,
+                annot=True,
+                cmap='coolwarm',
+                fmt='.2f',
+                linewidths=0.5,
+                linecolor='gray',
+                mask=(cor_filtered == 0),  # Only show correlations above the threshold
+                cbar_kws={'shrink': 0.8},
+                square=True,
+                annot_kws={'size': 8})  # Reduce font size for annotations
+
+    plt.xticks(rotation=90, fontsize=10)  # Rotate and reduce font size of x labels
+    plt.yticks(fontsize=10)                # Reduce font size of y labels
+    plt.title("Spearman Correlation Heatmap (Filtered for Correlations > |0.3|)", fontsize=16, weight='bold')
+    plt.show()
+
+def apply_correlation_before_encoding(X_train):
+    correlation_data = X_train.copy()
+    # Compute Spearman Correlation
+    matrix = correlation_data.corr(method='spearman', numeric_only=True)
+    # Plot Correlation Heatmap with threshold filtering
+    cor_heatmap_before_encoding(matrix)
+
+# Apply Spearman Correlation analysis on X_train before encoding and SMOTE
+apply_correlation_before_encoding(X_train)
+
+#-------------------------------------------
+# 4.5. Encoding Categorical Variables
+#-------------------------------------------
+
+# Select all categorical features in the training and testing sets
+categorical_features = X_train.select_dtypes(include='object').columns
+
+# One-Hot Encode all categorical features in both train and test datasets
+X_train_encoded = pd.get_dummies(X_train, columns=categorical_features, drop_first=True)
+X_test_encoded = pd.get_dummies(X_test, columns=categorical_features, drop_first=True)
 
 # Align the test set with the training set after encoding
 X_test_encoded = X_test_encoded.reindex(columns=X_train_encoded.columns, fill_value=0)
@@ -439,11 +478,13 @@ X_test_encoded = X_test_encoded.reindex(columns=X_train_encoded.columns, fill_va
 # Update features to encoded versions
 X_train, X_test = X_train_encoded, X_test_encoded
 
-#-------------------------------------------
-# 4.4. Applying SMOTE to Training Data
-#-------------------------------------------
+# Print statements to verify alignment
+print(f"X_train columns: {X_train.columns}")
+print(f"X_test columns: {X_test.columns}")
 
-from imblearn.over_sampling import SMOTE
+#-------------------------------------------
+# 4.6. Applying SMOTE to Training Data
+#-------------------------------------------
 
 # Define SMOTE object and Apply SMOTE to training data to balance the classes
 smote = SMOTE(sampling_strategy='minority', random_state=42)
@@ -454,7 +495,7 @@ print(f'Original Training Set Size: {X_train.shape}')
 print(f'SMOTE Resampled Training Set Size: {X_train_smote.shape}')
 
 #-------------------------------------------
-# 4.5. Spearman Correlation Analysis
+# 4.7. Spearman Correlation Analysis
 #-------------------------------------------
 
 # Update numerical columns after SMOTE
@@ -505,5 +546,247 @@ apply_correlation_v2(X_train_smote)
 X_train_smote = X_train_smote.drop(columns=['YearsInCurrentRole', 'YearsWithCurrManager', 'JobLevel'])
 
 # ------------------------------------------
-# 4.6. Variance
+# 4.8. Variance Threshold for Low Variance Features
 # ------------------------------------------
+
+# Function to apply variance threshold using cross-validation
+def select_features_variance(X, y, threshold=0.01):
+    count = 1
+    # Store low variance features for each split to later analyze common ones
+    low_variance_features_per_split = []
+
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+        
+        print(f'----- VARIANCE SPLIT {count} -----')
+
+        # Initialize VarianceThreshold selector with the specified threshold
+        selector = VarianceThreshold(threshold=threshold)
+        
+        # Fit the selector on the training data
+        selector.fit(X_train)
+        
+        # Get variances for all features in the current training split
+        variances = pd.Series(selector.variances_, index=X_train.columns)
+        
+        # Disable scientific notation and convert values to float with formatting
+        pd.options.display.float_format = '{:.6f}'.format
+
+        # Print variances for all features in decimal notation
+        print("Feature Variances:")
+        print(variances)
+        
+        # Identify features with variance below the threshold
+        low_variance_features = variances[variances < threshold].index.tolist()
+        if low_variance_features:
+            print("Features with Low Variance (Below Threshold):")
+            print(low_variance_features)
+        else:
+            print("No features found with variance below the threshold.")
+
+        # Collect low variance features from this split
+        low_variance_features_per_split.append(low_variance_features)
+        
+        count += 1
+    
+    # Summarize the most frequently occurring low variance features across all splits
+    feature_counter = Counter()
+    for features in low_variance_features_per_split:
+        feature_counter.update(features)
+    
+    # Display frequency of each feature considered low variance
+    feature_freq_df = pd.DataFrame.from_dict(feature_counter, orient='index', columns=['Frequency']).sort_values(by='Frequency', ascending=False)
+    print("\nFrequency of Features Considered Low Variance Across Splits:")
+    print(feature_freq_df)
+
+# Apply variance threshold selection with cross-validation on the SMOTE-balanced data
+select_features_variance(X_train_smote, y_train_smote, threshold=0.03)
+
+# ------------------------------------------
+# 4.9. Decision Tree Feature Importance (Embedded Method)
+# ------------------------------------------
+
+# Creating a function named as plot_importance that receives the feature importances and the name of the model being applied
+def plot_importance(variables, name):
+    imp_features = variables.sort_values()
+    plt.figure(figsize=(6, 8))
+    imp_features.plot(kind="barh")
+    plt.title(f"Feature importance using {name} Model")
+    plt.xlabel("Importance Score")
+    plt.ylabel("Feature")
+    plt.tight_layout()
+    plt.show()
+
+# Creating a function named apply_dt that takes your training data as input (independent variables and target)
+def apply_dt(X_train, y_train):
+    # Fit Decision Tree model
+    dt = DecisionTreeClassifier(random_state=99).fit(X_train, y_train)
+    # Extract feature importances
+    feature_importances = pd.Series(dt.feature_importances_, index=X_train.columns)
+    # Plot importance
+    plot_importance(feature_importances, 'Decision Tree')
+
+# Defining the function to apply Decision Tree Feature Selection across K-Folds
+def select_best_features_dt(X, y):
+    count = 1
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+        ######################################### SELECT FEATURES #################################################
+        print('_________________________________________________________________________________________________\n')
+        print(f'                                     DECISION TREE SPLIT {count}                                     ')
+        print('_________________________________________________________________________________________________')
+
+        # Apply decision tree on numerical and encoded features
+        apply_dt(X_train, y_train)
+        count += 1
+
+# Apply Decision Tree Feature Importance Selection on SMOTE-balanced data
+select_best_features_dt(X_train_smote, y_train_smote)
+
+# ------------------------------------------
+# 4.10. Recursive Feature Elimination (RFE)
+# ------------------------------------------
+
+# Function to apply RFE and print the selected features in a tabular format
+def apply_rfe(X_train, y_train, n_features_to_select=5):
+    # Applying RFE with Logistic Regression as the base model
+    rfe = RFE(estimator=LogisticRegression(max_iter=1000, random_state=42), n_features_to_select=n_features_to_select)
+    rfe.fit(X_train, y_train)
+    
+    # Creating a Series to show which features are selected
+    selected_features = pd.Series(rfe.support_, index=X_train.columns)
+    print("----------------- RFE ----------------------")
+    print(selected_features)
+
+# Main function to apply RFE feature selection using k-fold cross-validation
+def select_rfe_features(X, y):
+    count = 1
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+        ########################################### SCALE DATA ####################################################
+        numerical_data = X_train.copy()  # Assuming all data is used, including encoded categorical variables
+        scaler = MinMaxScaler().fit(numerical_data)
+        X_train_scaled = scaler.transform(numerical_data)
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=numerical_data.columns)
+
+        ######################################### APPLY RFE ######################################################
+        print('_________________________________________________________________________________________________\n')
+        print(f'                                     RFE SPLIT {count}                                    ')
+        print('_________________________________________________________________________________________________')
+        apply_rfe(X_train_scaled, y_train)
+
+        count += 1
+
+# Calling the function select_rfe_features passing as arguments your independent variables and your target
+select_rfe_features(X_train_smote, y_train_smote)
+
+# ------------------------------------------
+# 4.11. Lasso for Feature Selection
+# ------------------------------------------
+
+# Function to plot feature importance (used for Lasso coefficients)
+def plot_importance(variables, name):
+    imp_features = variables.sort_values()
+    plt.figure(figsize=(6, 8))
+    imp_features.plot(kind="barh")
+    plt.title(f"Feature importance using {name} Model")
+    plt.xlabel("Coefficient Value")
+    plt.ylabel("Feature")
+    plt.show()
+
+# Function to apply Lasso and generate the feature importance plot
+def apply_lasso_plot_only(X_train, y_train):
+    # Apply LassoCV to fit the model and determine coefficients
+    lasso = LassoCV(cv=5, random_state=42).fit(X_train, y_train)
+    coef = pd.Series(lasso.coef_, index=X_train.columns)
+
+    # Plot the importance of the features
+    plot_importance(coef, 'Lasso')
+
+# Main function to apply Lasso feature selection using k-fold cross-validation and generate plot only
+def select_best_features_lasso_plot(X, y):
+    count = 1
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+        ########################################### SCALE DATA ####################################################
+        numerical_data = X_train.copy()  # Assuming all data is used, including encoded categorical variables
+        scaler = MinMaxScaler().fit(numerical_data)
+        X_train_scaled = scaler.transform(numerical_data)
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=numerical_data.columns)
+
+        ######################################### APPLY LASSO ######################################################
+        print(f'----- LASSO SPLIT {count} -----')
+        apply_lasso_plot_only(X_train_scaled, y_train)
+
+        count += 1
+
+# Calling the function select_best_features_lasso_plot passing as arguments your independent variables and your target
+select_best_features_lasso_plot(X_train_smote, y_train_smote)
+
+# ------------------------------------------
+# 4.12. MIC (Mutual Information Criterion) Feature Selection
+# ------------------------------------------
+
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.preprocessing import LabelEncoder
+from collections import Counter
+
+# Function to perform MIC feature selection using k-fold cross-validation
+def select_features_mic(X, y):
+    count = 1
+    selected_features_splits = []
+
+    # Cross-validation loop
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+        ######################################### SELECT FEATURES #################################################
+        print('_________________________________________________________________________________________________\n')
+        print('                                     SPLIT ' + str(count) + '                                    ')
+        print('_________________________________________________________________________________________________')
+
+        # Compute mutual information for each feature in the training set
+        mi_scores = mutual_info_classif(X_train, y_train, discrete_features='auto')
+
+        # Create a DataFrame with mutual information scores
+        mi_df = pd.DataFrame({'Feature': X_train.columns, 'MI': mi_scores})
+
+        # Sort features by mutual information score
+        mi_df = mi_df.sort_values(by='MI', ascending=False)
+
+        # Display mutual information scores
+        print(mi_df)
+
+        # Select top 20 features for each split
+        top_n = 20
+        selected_features = mi_df['Feature'].head(top_n).tolist()
+
+        # Store the selected features for this split
+        selected_features_splits.append(selected_features)
+
+        count += 1
+
+    # Count the frequency of each feature across all splits
+    feature_counter = Counter()
+    for features in selected_features_splits:
+        feature_counter.update(features)
+
+    # Display the frequency of each feature
+    feature_freq_df = pd.DataFrame.from_dict(feature_counter, orient='index', columns=['Frequency']).sort_values(by='Frequency', ascending=False)
+    print("\nFrequency of Features Selected by MIC across all splits:\n")
+    print(feature_freq_df)
+
+    # Print selected features for each split in a more readable format
+    for i, features in enumerate(selected_features_splits, start=1):
+        print(f"\nSelected features for split {i}:\n{features}\n")
+
+# Apply MIC feature selection on SMOTE-balanced data
+select_features_mic(X_train_smote, y_train_smote)
