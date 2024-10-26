@@ -48,3 +48,10 @@ Thanks!
 1.	Split test & train sets
 2.	Feature importance no training set – aplicar remoção de variáveis em ambos os sets – train e test 
 3.	Aplicar SMOTE NC no train set – Resultado: Train set balanced ready for data modeling
+
+26/10/2024 - Joao M. & Joao G.
+Feature selection based on Chi-Square, Spearman Corr. + DT, RFE, Lasso, DT --> Final decision was 2 train dfs:
+1) X_train1 --> Dropping just the variables to remove
+2) X_train2 --> Dropping variables to remove and to try
+
+Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.

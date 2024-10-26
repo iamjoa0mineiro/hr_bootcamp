@@ -420,6 +420,9 @@ def select_best_cat_features(X, y):
 # Apply Chi-Square and get selected features
 selected_categorical_features = select_best_cat_features(X_train, y_train)
 
+# INSIGHTS: Drop the following columns --> ['Gender', 'EducationField']
+X_train.drop(['Gender', 'EducationField'], axis=1, inplace=True)
+
 #-------------------------------------------
 # 4.3. Spearman Correlation for Numerical Features
 #-------------------------------------------
@@ -460,25 +463,49 @@ def apply_correlation(X_train):
 # Apply Spearman Correlation analysis on X_train
 apply_correlation(X_train)
 
+# To confirm the features to remove from the correlation analysis, we will run a Decision Tree to select them based on importance
+def plot_importance(variables, name):
+    imp_features = variables.sort_values()
+    plt.figure(figsize=(6, 8))
+    imp_features.plot(kind="barh")
+    plt.title(f"Feature importance using {name} Model")
+    plt.xlabel("Importance Score")
+    plt.ylabel("Feature")
+    plt.tight_layout()
+    plt.show()
+
+# Function to apply decision tree on numerical features and plot feature importance
+def apply_dt(X_train, y_train):
+    dt = DecisionTreeClassifier(random_state=99).fit(X_train, y_train)
+    feature_importances = pd.Series(dt.feature_importances_, index=X_train.columns)
+    plot_importance(feature_importances, 'Decision Tree')
+
+def select_best_features_dt(X, y):
+    count = 1
+    for train_index, val_index in skf.split(X, y):
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+        print(f'----- DECISION TREE SPLIT {count} -----')
+
+        # Use only numerical columns
+        X_train_num = X_train[numerical_columns]
+        apply_dt(X_train_num, y_train)
+        count += 1
+
+# Apply Decision Tree Feature Importance Selection on numerical features only
+select_best_features_dt(X_train, y_train)
+
+# INSIGHTS: Drop the following columns --> ['YearsInCurrentRole', 'JobLevel', 'YearsAtCompany']
+X_train.drop(['YearsInCurrentRole', 'JobLevel', 'YearsAtCompany'], axis=1, inplace=True)
+
 # -------------------------------------------
 # 4.4. Drop Highly Correlated Features
 # -------------------------------------------
 
 # Based on the Spearman correlation analysis, we found that the following features have very high correlations:
-# - 'JobLevel' vs. 'MonthlyIncome' (correlation = 0.92)
-# - 'YearsInCurrentRole' vs. 'YearsAtCompany' (correlation = 0.86)
-# - 'YearsWithCurrentManager' vs. 'YearsAtCompany' (correlation = 0.84)
-
-# To reduce multicollinearity, we decided to drop the following features:
-# - 'JobLevel': We kept 'MonthlyIncome' since it provides a more granular representation of employee compensation.
-# - 'YearsInCurrentRole': We kept 'YearsAtCompany' because it is a more comprehensive feature.
-# - 'YearsWithCurrentManager': We kept 'YearsAtCompany' for a similar reason, as it provides a better overview of tenure.
-
-# Insight: By removing the highly correlated features, we reduce redundancy and make our model less prone to multicollinearity issues.
-# This helps in simplifying the model, making it more interpretable, and reducing the risk of overfitting.
 
 # Update numerical columns after dropping correlated features
-numerical_columns = X_train.drop(columns=['JobLevel', 'YearsInCurrentRole', 'YearsWithCurrManager']).select_dtypes(include=[np.number]).columns
+numerical_columns = X_train.select_dtypes(include=[np.number]).columns
 X_train_numerical = X_train[numerical_columns]
 
 # -------------------------------------------
@@ -534,43 +561,7 @@ def select_features_variance(X, y, threshold=0.01):
 select_features_variance(X_train_numerical, y_train, threshold=0.03)
 
 # ------------------------------------------
-# 4.6. Decision Tree Feature Importance (Embedded Method)
-# ------------------------------------------
-
-# Creating a function named as plot_importance that receives the feature importances and the name of the model being applied
-def plot_importance(variables, name):
-    imp_features = variables.sort_values()
-    plt.figure(figsize=(6, 8))
-    imp_features.plot(kind="barh")
-    plt.title(f"Feature importance using {name} Model")
-    plt.xlabel("Importance Score")
-    plt.ylabel("Feature")
-    plt.tight_layout()
-    plt.show()
-
-# Function to apply decision tree on numerical features and plot feature importance
-def apply_dt(X_train, y_train):
-    dt = DecisionTreeClassifier(random_state=99).fit(X_train, y_train)
-    feature_importances = pd.Series(dt.feature_importances_, index=X_train.columns)
-    plot_importance(feature_importances, 'Decision Tree')
-
-def select_best_features_dt(X, y):
-    count = 1
-    for train_index, val_index in skf.split(X, y):
-        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
-        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
-        print(f'----- DECISION TREE SPLIT {count} -----')
-
-        # Use only numerical columns
-        X_train_num = X_train[numerical_columns]
-        apply_dt(X_train_num, y_train)
-        count += 1
-
-# Apply Decision Tree Feature Importance Selection on numerical features only
-select_best_features_dt(X_train, y_train)
-
-# ------------------------------------------
-# 4.7. Recursive Feature Elimination (RFE)
+# 4.6. Recursive Feature Elimination (RFE)
 # ------------------------------------------
 
 def apply_rfe(X_train, y_train, n_features_to_select=5):
@@ -598,14 +589,11 @@ def select_rfe_features(X, y):
 
         count += 1
 
-# Apply RFE Feature Selection on numerical features only
-select_rfe_features(X_train, y_train)
-
 # ------------------------------------------
-# 4.8. Lasso
+# 4.7. Lasso
 # ------------------------------------------
 
-def apply_lasso_plot_only(X_train, y_train):
+def apply_lasso(X_train, y_train):
     lasso = LassoCV(cv=5, random_state=42).fit(X_train, y_train)
     coef = pd.Series(lasso.coef_, index=X_train.columns)
     plot_importance(coef, 'Lasso')
@@ -623,39 +611,52 @@ def select_best_features_lasso_plot(X, y):
         X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train_num.columns)
 
         print(f'----- LASSO SPLIT {count} -----')
-        apply_lasso_plot_only(X_train_scaled, y_train)
+        apply_lasso(X_train_scaled, y_train)
 
         count += 1
 
-# Apply Lasso Feature Selection on numerical features only
-select_best_features_lasso_plot(X_train, y_train)
-
 # ------------------------------------------
-# 4.9. MIC (Mutual Information Criterion)
+# 4.8. RFE, Lasso, DT Models with 10 Splits
 # ------------------------------------------
 
-def select_features_mic(X, y):
+def select_best_features(X,y):
     count = 1
-    selected_features_splits = []
-
-    for train_index, val_index in skf.split(X, y):
+    for train_index, val_index in skf.split(X,y):
         X_train, X_val = X.iloc[train_index], X.iloc[val_index]
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
-        # Use only numerical columns for MIC calculation
-        X_train_num = X_train[numerical_columns]
+        ########################################### SCALE DATA ####################################################
+        scaler = MinMaxScaler().fit(X_train)
+        X_train_scaled = scaler.transform(X_train)
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns = X_train.columns)
 
-        print(f'----- MIC SPLIT {count} -----')
-        mi_scores = mutual_info_classif(X_train_num, y_train, discrete_features='auto')
-        mi_df = pd.DataFrame({'Feature': X_train_num.columns, 'MIC': mi_scores}).sort_values(by='MIC', ascending=False)
-        print(mi_df)
+        ######################################### SELECT FEATURES #################################################
+        print('_________________________________________________________________________________________________\n')
+        print('                                     SPLIT ' + str(count) + '                                    ')
+        print('_________________________________________________________________________________________________')
 
-        # Select top 20 features for each split
-        top_n = 20
-        selected_features = mi_df['Feature'].head(top_n).tolist()
-        selected_features_splits.append(selected_features)
+        # Check which features to use using RFE
+        print('')
+        print('----------------- RFE ----------------------')
+        apply_rfe(X_train_scaled, y_train)
 
-        count += 1
+        # check which features to use using Lasso
+        print('')
+        print('----------------- LASSO ----------------------')
+        apply_lasso(X_train_scaled, y_train)
 
-# Apply MIC Feature Selection on numerical features only
-select_features_mic(X_train, y_train)
+        # check which features to use using DT
+        print('')
+        print('----------------- DT ----------------------')
+        apply_dt(X_train_scaled, y_train)
+
+        count+=1
+
+# INSIGHTS: 
+# 1. Drop the following columns --> ['Education', 'MonthlyRate', 'PercentSalaryHike', 'PerformanceRating']
+# 2. Try models with the following columns --> ['DailyRate', 'EnvironmentSatisfaction', 'HourlyRate', 'JobSatisfaction', 'RelationshipSatisfaction', 'TrainningTimesLastYear','WorkLifeBalance', 'YearsSinceLastPromotion']
+variables_to_drop = ['Education', 'MonthlyRate', 'PercentSalaryHike', 'PerformanceRating']
+variables_to_try = variables_to_drop + ['DailyRate', 'EnvironmentSatisfaction', 'HourlyRate', 'JobSatisfaction', 'RelationshipSatisfaction', 'TrainningTimesLastYear','WorkLifeBalance', 'YearsSinceLastPromotion']
+
+X_train1 = X_train.drop(variables_to_drop, axis=1)
+X_train2 = X_train.drop(variables_to_try, axis=1)
