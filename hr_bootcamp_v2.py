@@ -657,14 +657,5 @@ def select_features_mic(X, y):
 
         count += 1
 
-    # Count the frequency of each feature across all splits
-    feature_counter = Counter()
-    for features in selected_features_splits:
-        feature_counter.update(features)
-
-    feature_freq_df = pd.DataFrame.from_dict(feature_counter, orient='index', columns=['Frequency']).sort_values(by='Frequency', ascending=False)
-    print("\nFrequency of Features Selected by MIC across all splits:\n")
-    print(feature_freq_df)
-
 # Apply MIC Feature Selection on numerical features only
 select_features_mic(X_train, y_train)
