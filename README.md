@@ -43,3 +43,8 @@ Thanks!
 
 -- Depois de terminar os anteriores, próximo passo:
 - Feature Engeneering
+
+26/10/2024
+1.	Split test & train sets
+2.	Feature importance no training set – aplicar remoção de variáveis em ambos os sets – train e test 
+3.	Aplicar SMOTE NC no train set – Resultado: Train set balanced ready for data modeling
