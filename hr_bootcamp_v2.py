@@ -6,16 +6,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import squarify
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
 from scipy import stats
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.feature_selection import RFE # wrapper method
 from sklearn.linear_model import LogisticRegression # (This is one possible model to apply inside RFE)
 from sklearn.linear_model import LassoCV # embedded method
 from sklearn.tree import DecisionTreeClassifier # embedded method
 from sklearn.model_selection import StratifiedKFold
-from sklearn.feature_selection import SelectKBest, chi2 
-from sklearn.feature_selection import VarianceThreshold
+from sklearn.feature_selection import SelectKBest, chi2, VarianceThreshold, mutual_info_classif
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
@@ -366,7 +365,7 @@ attrition_boxplot('YearsSinceLastPromotion')
 attrition_boxplot('YearsWithCurrManager')
 # Insight: Employees with fewer years with their current manager show a higher tendency to leave.
 
- #==========================================
+#==========================================
 # SECTION 4: Feature Selection
 # ==========================================
 
@@ -381,12 +380,12 @@ y = hr['Attrition']
 # Split into Train and Test Sets (70% training, 30% testing)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
 
+# Define StratifiedKFold for Cross-Validation
+skf = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
+
 #-------------------------------------------
 # 4.2. Chi-Square for Categorical Variables
 #-------------------------------------------
-
-# Define StratifiedKFold for Cross-Validation
-skf = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
 
 # Select categorical features for Chi-Square test
 categorical_features = X_train.select_dtypes(include='object').columns
@@ -422,13 +421,13 @@ def select_best_cat_features(X, y):
 selected_categorical_features = select_best_cat_features(X_train, y_train)
 
 #-------------------------------------------
-# 4.4. Spearman Correlation for Numerical Features Before Encoding and SMOTE
+# 4.3. Spearman Correlation for Numerical Features
 #-------------------------------------------
 
 # Select numerical columns only for Spearman Correlation analysis
 numerical_columns = X_train.select_dtypes(include=[np.number]).columns
 
-def cor_heatmap_before_encoding(cor, threshold=0.3):
+def cor_heatmap(cor, threshold=0.3):
     # Filter out low correlations based on the threshold
     mask = np.abs(cor) < threshold
     cor_filtered = cor.copy()
@@ -451,132 +450,65 @@ def cor_heatmap_before_encoding(cor, threshold=0.3):
     plt.title("Spearman Correlation Heatmap (Filtered for Correlations > |0.3|)", fontsize=16, weight='bold')
     plt.show()
 
-def apply_correlation_before_encoding(X_train):
+def apply_correlation(X_train):
     correlation_data = X_train.copy()
     # Compute Spearman Correlation
     matrix = correlation_data.corr(method='spearman', numeric_only=True)
     # Plot Correlation Heatmap with threshold filtering
-    cor_heatmap_before_encoding(matrix)
+    cor_heatmap(matrix)
 
-# Apply Spearman Correlation analysis on X_train before encoding and SMOTE
-apply_correlation_before_encoding(X_train)
+# Apply Spearman Correlation analysis on X_train
+apply_correlation(X_train)
 
-#-------------------------------------------
-# 4.5. Encoding Categorical Variables
-#-------------------------------------------
+# -------------------------------------------
+# 4.4. Drop Highly Correlated Features
+# -------------------------------------------
 
-# Select all categorical features in the training and testing sets
-categorical_features = X_train.select_dtypes(include='object').columns
+# Based on the Spearman correlation analysis, we found that the following features have very high correlations:
+# - 'JobLevel' vs. 'MonthlyIncome' (correlation = 0.92)
+# - 'YearsInCurrentRole' vs. 'YearsAtCompany' (correlation = 0.86)
+# - 'YearsWithCurrentManager' vs. 'YearsAtCompany' (correlation = 0.84)
 
-# One-Hot Encode all categorical features in both train and test datasets
-X_train_encoded = pd.get_dummies(X_train, columns=categorical_features, drop_first=True)
-X_test_encoded = pd.get_dummies(X_test, columns=categorical_features, drop_first=True)
+# To reduce multicollinearity, we decided to drop the following features:
+# - 'JobLevel': We kept 'MonthlyIncome' since it provides a more granular representation of employee compensation.
+# - 'YearsInCurrentRole': We kept 'YearsAtCompany' because it is a more comprehensive feature.
+# - 'YearsWithCurrentManager': We kept 'YearsAtCompany' for a similar reason, as it provides a better overview of tenure.
 
-# Align the test set with the training set after encoding
-X_test_encoded = X_test_encoded.reindex(columns=X_train_encoded.columns, fill_value=0)
+# Insight: By removing the highly correlated features, we reduce redundancy and make our model less prone to multicollinearity issues.
+# This helps in simplifying the model, making it more interpretable, and reducing the risk of overfitting.
 
-# Update features to encoded versions
-X_train, X_test = X_train_encoded, X_test_encoded
+# Update numerical columns after dropping correlated features
+numerical_columns = X_train.drop(columns=['JobLevel', 'YearsInCurrentRole', 'YearsWithCurrManager']).select_dtypes(include=[np.number]).columns
+X_train_numerical = X_train[numerical_columns]
 
-# Print statements to verify alignment
-print(f"X_train columns: {X_train.columns}")
-print(f"X_test columns: {X_test.columns}")
+# -------------------------------------------
+# 4.5. Variance Threshold for Low Variance Features
+# -------------------------------------------
 
-#-------------------------------------------
-# 4.6. Applying SMOTE to Training Data
-#-------------------------------------------
-
-# Define SMOTE object and Apply SMOTE to training data to balance the classes
-smote = SMOTE(sampling_strategy='minority', random_state=42)
-X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
-
-# Print Resampled Data Sizes
-print(f'Original Training Set Size: {X_train.shape}')
-print(f'SMOTE Resampled Training Set Size: {X_train_smote.shape}')
-
-#-------------------------------------------
-# 4.7. Spearman Correlation Analysis
-#-------------------------------------------
-
-# Update numerical columns after SMOTE
-numerical_columns = X_train_smote.select_dtypes(include=[np.number]).columns
-
-# Apply Spearman Correlation to detect multicollinearity among numerical variables
-def cor_heatmap_v2(cor, threshold=0.3):
-    # Filter out low correlations based on the threshold
-    mask = np.abs(cor) < threshold
-    cor_filtered = cor.copy()
-    cor_filtered[mask] = 0
-
-    plt.figure(figsize=(20, 16))  # Increase figure size
-    sns.heatmap(data=cor_filtered, 
-                annot=True, 
-                cmap='coolwarm', 
-                fmt='.2f', 
-                linewidths=0.5, 
-                linecolor='gray',
-                mask=(cor_filtered == 0),  # Only show correlations above the threshold
-                cbar_kws={'shrink': 0.8}, 
-                square=True,
-                annot_kws={'size': 8})  # Reduce font size for annotations
-    
-    plt.xticks(rotation=90, fontsize=10)  # Rotate and reduce font size of x labels
-    plt.yticks(fontsize=10)                # Reduce font size of y labels
-    plt.title("Spearman Correlation Heatmap (Filtered for Correlations > |0.3|)", fontsize=16, weight='bold')
-    plt.show()
-
-def apply_correlation_v2(X_train):
-    correlation_data = X_train.copy()
-    # Compute Spearman Correlation
-    matrix = correlation_data.corr(method='spearman', numeric_only=True)
-    # Plot Correlation Heatmap with threshold filtering
-    cor_heatmap_v2(matrix)
-
-# Apply correlation analysis to identify highly correlated features
-apply_correlation_v2(X_train_smote)
-
-# INSIGHT: The features 'YearsInCurrentRole', 'YearsWithCurrManager', and 'JobLevel' were dropped to reduce multicollinearity:
-# - 'YearsInCurrentRole' (correlation with 'YearsAtCompany': 0.88)
-# - 'YearsWithCurrManager' (correlation with 'YearsAtCompany': 0.86, correlation with 'YearsInCurrentRole': 0.78)
-# - 'JobLevel' (correlation with 'TotalWorkingYears': 0.74)
-# 'YearsAtCompany' was chosen over 'YearsInCurrentRole' and 'YearsWithCurrManager' because it provides a more comprehensive measure of an employee's tenure.
-# 'TotalWorkingYears' was preferred over 'JobLevel' as it gives a more detailed view of an employee's experience, allowing the model to capture more nuanced relationships.
-
-# Drop correlated features
-X_train_smote = X_train_smote.drop(columns=['YearsInCurrentRole', 'YearsWithCurrManager', 'JobLevel'])
-
-# ------------------------------------------
-# 4.8. Variance Threshold for Low Variance Features
-# ------------------------------------------
-
-# Function to apply variance threshold using cross-validation
+# Function to apply variance threshold using cross-validation on numerical variables
 def select_features_variance(X, y, threshold=0.01):
     count = 1
-    # Store low variance features for each split to later analyze common ones
     low_variance_features_per_split = []
 
     for train_index, val_index in skf.split(X, y):
         X_train, X_val = X.iloc[train_index], X.iloc[val_index]
-        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
-        
+
         print(f'----- VARIANCE SPLIT {count} -----')
 
         # Initialize VarianceThreshold selector with the specified threshold
         selector = VarianceThreshold(threshold=threshold)
-        
+
         # Fit the selector on the training data
         selector.fit(X_train)
-        
+
         # Get variances for all features in the current training split
         variances = pd.Series(selector.variances_, index=X_train.columns)
-        
-        # Disable scientific notation and convert values to float with formatting
-        pd.options.display.float_format = '{:.6f}'.format
+        pd.options.display.float_format = '{:.6f}'.format  # Disable scientific notation
 
         # Print variances for all features in decimal notation
         print("Feature Variances:")
         print(variances)
-        
+
         # Identify features with variance below the threshold
         low_variance_features = variances[variances < threshold].index.tolist()
         if low_variance_features:
@@ -585,26 +517,24 @@ def select_features_variance(X, y, threshold=0.01):
         else:
             print("No features found with variance below the threshold.")
 
-        # Collect low variance features from this split
         low_variance_features_per_split.append(low_variance_features)
-        
+
         count += 1
-    
+
     # Summarize the most frequently occurring low variance features across all splits
     feature_counter = Counter()
     for features in low_variance_features_per_split:
         feature_counter.update(features)
-    
-    # Display frequency of each feature considered low variance
+
     feature_freq_df = pd.DataFrame.from_dict(feature_counter, orient='index', columns=['Frequency']).sort_values(by='Frequency', ascending=False)
     print("\nFrequency of Features Considered Low Variance Across Splits:")
     print(feature_freq_df)
 
-# Apply variance threshold selection with cross-validation on the SMOTE-balanced data
-select_features_variance(X_train_smote, y_train_smote, threshold=0.03)
+# Apply variance threshold selection with cross-validation on numerical features only
+select_features_variance(X_train_numerical, y_train, threshold=0.03)
 
 # ------------------------------------------
-# 4.9. Decision Tree Feature Importance (Embedded Method)
+# 4.6. Decision Tree Feature Importance (Embedded Method)
 # ------------------------------------------
 
 # Creating a function named as plot_importance that receives the feature importances and the name of the model being applied
@@ -618,158 +548,111 @@ def plot_importance(variables, name):
     plt.tight_layout()
     plt.show()
 
-# Creating a function named apply_dt that takes your training data as input (independent variables and target)
+# Function to apply decision tree on numerical features and plot feature importance
 def apply_dt(X_train, y_train):
-    # Fit Decision Tree model
     dt = DecisionTreeClassifier(random_state=99).fit(X_train, y_train)
-    # Extract feature importances
     feature_importances = pd.Series(dt.feature_importances_, index=X_train.columns)
-    # Plot importance
     plot_importance(feature_importances, 'Decision Tree')
 
-# Defining the function to apply Decision Tree Feature Selection across K-Folds
 def select_best_features_dt(X, y):
     count = 1
     for train_index, val_index in skf.split(X, y):
         X_train, X_val = X.iloc[train_index], X.iloc[val_index]
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+        print(f'----- DECISION TREE SPLIT {count} -----')
 
-        ######################################### SELECT FEATURES #################################################
-        print('_________________________________________________________________________________________________\n')
-        print(f'                                     DECISION TREE SPLIT {count}                                     ')
-        print('_________________________________________________________________________________________________')
-
-        # Apply decision tree on numerical and encoded features
-        apply_dt(X_train, y_train)
+        # Use only numerical columns
+        X_train_num = X_train[numerical_columns]
+        apply_dt(X_train_num, y_train)
         count += 1
 
-# Apply Decision Tree Feature Importance Selection on SMOTE-balanced data
-select_best_features_dt(X_train_smote, y_train_smote)
+# Apply Decision Tree Feature Importance Selection on numerical features only
+select_best_features_dt(X_train, y_train)
 
 # ------------------------------------------
-# 4.10. Recursive Feature Elimination (RFE)
+# 4.7. Recursive Feature Elimination (RFE)
 # ------------------------------------------
 
-# Function to apply RFE and print the selected features in a tabular format
 def apply_rfe(X_train, y_train, n_features_to_select=5):
     # Applying RFE with Logistic Regression as the base model
     rfe = RFE(estimator=LogisticRegression(max_iter=1000, random_state=42), n_features_to_select=n_features_to_select)
     rfe.fit(X_train, y_train)
-    
-    # Creating a Series to show which features are selected
     selected_features = pd.Series(rfe.support_, index=X_train.columns)
     print("----------------- RFE ----------------------")
     print(selected_features)
 
-# Main function to apply RFE feature selection using k-fold cross-validation
 def select_rfe_features(X, y):
     count = 1
     for train_index, val_index in skf.split(X, y):
         X_train, X_val = X.iloc[train_index], X.iloc[val_index]
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
-        ########################################### SCALE DATA ####################################################
-        numerical_data = X_train.copy()  # Assuming all data is used, including encoded categorical variables
-        scaler = MinMaxScaler().fit(numerical_data)
-        X_train_scaled = scaler.transform(numerical_data)
-        X_train_scaled = pd.DataFrame(X_train_scaled, columns=numerical_data.columns)
+        # Use only numerical columns and scale data
+        X_train_num = X_train[numerical_columns]
+        scaler = MinMaxScaler().fit(X_train_num)
+        X_train_scaled = scaler.transform(X_train_num)
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train_num.columns)
 
-        ######################################### APPLY RFE ######################################################
-        print('_________________________________________________________________________________________________\n')
-        print(f'                                     RFE SPLIT {count}                                    ')
-        print('_________________________________________________________________________________________________')
+        print(f'----- RFE SPLIT {count} -----')
         apply_rfe(X_train_scaled, y_train)
 
         count += 1
 
-# Calling the function select_rfe_features passing as arguments your independent variables and your target
-select_rfe_features(X_train_smote, y_train_smote)
+# Apply RFE Feature Selection on numerical features only
+select_rfe_features(X_train, y_train)
 
 # ------------------------------------------
-# 4.11. Lasso for Feature Selection
+# 4.8. Lasso
 # ------------------------------------------
 
-# Function to plot feature importance (used for Lasso coefficients)
-def plot_importance(variables, name):
-    imp_features = variables.sort_values()
-    plt.figure(figsize=(6, 8))
-    imp_features.plot(kind="barh")
-    plt.title(f"Feature importance using {name} Model")
-    plt.xlabel("Coefficient Value")
-    plt.ylabel("Feature")
-    plt.show()
-
-# Function to apply Lasso and generate the feature importance plot
 def apply_lasso_plot_only(X_train, y_train):
-    # Apply LassoCV to fit the model and determine coefficients
     lasso = LassoCV(cv=5, random_state=42).fit(X_train, y_train)
     coef = pd.Series(lasso.coef_, index=X_train.columns)
-
-    # Plot the importance of the features
     plot_importance(coef, 'Lasso')
 
-# Main function to apply Lasso feature selection using k-fold cross-validation and generate plot only
 def select_best_features_lasso_plot(X, y):
     count = 1
     for train_index, val_index in skf.split(X, y):
         X_train, X_val = X.iloc[train_index], X.iloc[val_index]
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
-        ########################################### SCALE DATA ####################################################
-        numerical_data = X_train.copy()  # Assuming all data is used, including encoded categorical variables
-        scaler = MinMaxScaler().fit(numerical_data)
-        X_train_scaled = scaler.transform(numerical_data)
-        X_train_scaled = pd.DataFrame(X_train_scaled, columns=numerical_data.columns)
+        # Use only numerical columns and scale data
+        X_train_num = X_train[numerical_columns]
+        scaler = MinMaxScaler().fit(X_train_num)
+        X_train_scaled = scaler.transform(X_train_num)
+        X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train_num.columns)
 
-        ######################################### APPLY LASSO ######################################################
         print(f'----- LASSO SPLIT {count} -----')
         apply_lasso_plot_only(X_train_scaled, y_train)
 
         count += 1
 
-# Calling the function select_best_features_lasso_plot passing as arguments your independent variables and your target
-select_best_features_lasso_plot(X_train_smote, y_train_smote)
+# Apply Lasso Feature Selection on numerical features only
+select_best_features_lasso_plot(X_train, y_train)
 
 # ------------------------------------------
-# 4.12. MIC (Mutual Information Criterion) Feature Selection
+# 4.9. MIC (Mutual Information Criterion)
 # ------------------------------------------
 
-from sklearn.feature_selection import mutual_info_classif
-from sklearn.preprocessing import LabelEncoder
-from collections import Counter
-
-# Function to perform MIC feature selection using k-fold cross-validation
 def select_features_mic(X, y):
     count = 1
     selected_features_splits = []
 
-    # Cross-validation loop
     for train_index, val_index in skf.split(X, y):
         X_train, X_val = X.iloc[train_index], X.iloc[val_index]
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
-        ######################################### SELECT FEATURES #################################################
-        print('_________________________________________________________________________________________________\n')
-        print('                                     SPLIT ' + str(count) + '                                    ')
-        print('_________________________________________________________________________________________________')
+        # Use only numerical columns for MIC calculation
+        X_train_num = X_train[numerical_columns]
 
-        # Compute mutual information for each feature in the training set
-        mi_scores = mutual_info_classif(X_train, y_train, discrete_features='auto')
-
-        # Create a DataFrame with mutual information scores
-        mi_df = pd.DataFrame({'Feature': X_train.columns, 'MI': mi_scores})
-
-        # Sort features by mutual information score
-        mi_df = mi_df.sort_values(by='MI', ascending=False)
-
-        # Display mutual information scores
+        print(f'----- MIC SPLIT {count} -----')
+        mi_scores = mutual_info_classif(X_train_num, y_train, discrete_features='auto')
+        mi_df = pd.DataFrame({'Feature': X_train_num.columns, 'MIC': mi_scores}).sort_values(by='MIC', ascending=False)
         print(mi_df)
 
         # Select top 20 features for each split
         top_n = 20
         selected_features = mi_df['Feature'].head(top_n).tolist()
-
-        # Store the selected features for this split
         selected_features_splits.append(selected_features)
 
         count += 1
@@ -779,14 +662,9 @@ def select_features_mic(X, y):
     for features in selected_features_splits:
         feature_counter.update(features)
 
-    # Display the frequency of each feature
     feature_freq_df = pd.DataFrame.from_dict(feature_counter, orient='index', columns=['Frequency']).sort_values(by='Frequency', ascending=False)
     print("\nFrequency of Features Selected by MIC across all splits:\n")
     print(feature_freq_df)
 
-    # Print selected features for each split in a more readable format
-    for i, features in enumerate(selected_features_splits, start=1):
-        print(f"\nSelected features for split {i}:\n{features}\n")
-
-# Apply MIC feature selection on SMOTE-balanced data
-select_features_mic(X_train_smote, y_train_smote)
+# Apply MIC Feature Selection on numerical features only
+select_features_mic(X_train, y_train)
