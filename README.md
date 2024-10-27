@@ -31,19 +31,6 @@ Apenas algumas notas importantes:
 - Visualization - DONE
 - Feature Engeneering - !!!NOT DONE!!!
 
-Por favor dêem só uma vista de olhos no meu código. Corram e vejam os outputs.
-
-Se tiverem algum feedback para alterações digam! :)
-
-Thanks!
-
--- Tópicos por terminar:
-- Unvariate Analysis
-- Bivariate and Multivariate Analysis
-
--- Depois de terminar os anteriores, próximo passo:
-- Feature Engeneering
-
 26/10/2024
 1.	Split test & train sets
 2.	Feature importance no training set – aplicar remoção de variáveis em ambos os sets – train e test 
@@ -53,5 +40,13 @@ Thanks!
 Feature selection based on Chi-Square, Spearman Corr. + DT, RFE, Lasso, DT --> Final decision was 2 train dfs:
 1) X_train1 --> Dropping just the variables to remove
 2) X_train2 --> Dropping variables to remove and to try
+
+27/10/2024 - Bruno (Nova versão - não estava a conseguir perceber o código)
+Feature selection organizada em numerical e categorical features
+Spearman Correlation Analysis: DT summary table para perceber melhor que variáveis correlacionadas devem ser removidas
+Final Analysis - adicionei summary table e mudei uma beca o codigo. Usei muito ChatGPT, por isso se conseguirem revejam o código só para o caso.
+Recomendação: 
+    remover variance analysis (não nos traz nada, não precisamos de manter no código)
+    usar MIC
 
 Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.
