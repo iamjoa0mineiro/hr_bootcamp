@@ -49,4 +49,11 @@ Recomendação:
     remover variance analysis (não nos traz nada, não precisamos de manter no código)
     usar MIC
 
+Next Steps:
+MIC for categorical variables
+Tabela Feature Selection:
+    - Coluna para o sum total
+    - Selecionar o que é para manter e retirar com base nas regras dos Joões
+Modeling the Data
+
 Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.
