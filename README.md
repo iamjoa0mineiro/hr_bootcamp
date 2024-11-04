@@ -57,3 +57,9 @@ Tabela Feature Selection:
 Modeling the Data
 
 Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.
+
+3/11/2024 - Joao M.
+Adicionei o código do MIC - falta pensarmos num critério de variables to keep/exclude
+
+Next Steps
+Adicionar ao df/excel e refazer cálculo de variables to keep, try or remove
