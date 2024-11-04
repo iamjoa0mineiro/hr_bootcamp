@@ -49,17 +49,20 @@ Recomendação:
     remover variance analysis (não nos traz nada, não precisamos de manter no código)
     usar MIC
 
-Next Steps:
-MIC for categorical variables
-Tabela Feature Selection:
-    - Coluna para o sum total
-    - Selecionar o que é para manter e retirar com base nas regras dos Joões
-Modeling the Data
-
-Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.
-
 3/11/2024 - Joao M.
 Adicionei o código do MIC - falta pensarmos num critério de variables to keep/exclude
 
-Next Steps
-Adicionar ao df/excel e refazer cálculo de variables to keep, try or remove
+04/11/2024 - Bruno
+MIC DONE
+Feature Selection for Categorical Variables is finished
+New variable for the random state r_state = 99.
+
+Next Steps:
+MIC for categorical variables - DONE
+Tabela Feature Selection: DONE
+    - Coluna para o sum total
+    - Selecionar o que é para manter e retirar com base nas regras dos Joões
+
+Modeling the Data: NEXT
+
+Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.

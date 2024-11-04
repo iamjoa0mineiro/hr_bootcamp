@@ -380,17 +380,25 @@ y = hr['Attrition']
 # Split into Train and Test Sets (70% training, 30% testing)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
 
-# Define StratifiedKFold for Cross-Validation
-skf = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
+# Set global random state for reproducibility
+r_state = 99
 
+# Define StratifiedKFold for Cross-Validation
+skf = StratifiedKFold(n_splits=10, random_state=r_state, shuffle=True)
+
+#-------------------------------------------
 #-------------------------------------------
 # 4.2. Categorical Variables
 #-------------------------------------------
+#-------------------------------------------
 
+#-------------------------------------------
 # 4.2.1 Chi-Square
+#-------------------------------------------
 
 # Select categorical features for Chi-Square test
 categorical_features = X_train.select_dtypes(include='object').columns
+X_train_categorical = X_train[categorical_features]
 
 def apply_chisquare(X, y, var, alpha=0.05):
     dfObserved = pd.crosstab(y, X)
@@ -419,11 +427,61 @@ def select_best_cat_features(X, y):
     
     return selected_features
 
-# Apply Chi-Square and get selected features
+# Apply Chi-Square
 selected_categorical_features = select_best_cat_features(X_train, y_train)
 
 # INSIGHTS: Drop the following columns --> ['Gender', 'EducationField']
-X_train.drop(['Gender', 'EducationField'], axis=1, inplace=True)
+
+#-------------------------------------------
+# 4.2.2 MIC
+#-------------------------------------------
+# Function to calculate MIC for categorical features with 10-fold cross-validation
+def calculate_mic_with_cv(X, y, skf):
+    selected_features_mic = {}
+    
+    for fold, (train_index, val_index) in enumerate(skf.split(X, y), 1):
+        # Split the data into training and validation sets
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
+        y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+        
+        # Label encode categorical features before calculating MIC
+        le = LabelEncoder()
+        X_train_encoded = X_train.apply(lambda col: le.fit_transform(col) if col.dtypes == 'object' else col)
+        # Compute MIC scores
+        mic_scores = mutual_info_classif(X_train_encoded, y_train, discrete_features='auto',random_state=r_state)
+        
+        # Collect the MIC scores for each feature
+        if fold == 1:
+            # Initialize the dictionary to store scores for each feature
+            selected_features_mic = {feature: [] for feature in X.columns}
+        # Co_features_mic = {feature: [] for feature in X.columns}
+        
+        for feature, score in zip(X.columns, mic_scores):
+            selected_features_mic[feature].append(score)
+        
+        print(f"MIC Scores for Fold {fold}: {dict(zip(X.columns, mic_scores))}")
+    
+    # Calculate the average MIC score for each feature across all folds
+    average_mic_scores = {feature: np.mean(scores) for feature, scores in selected_features_mic.items()}
+    
+    # Create a DataFrame to display average MIC scores
+    mic_df = pd.DataFrame(list(average_mic_scores.items()), columns=['Feature', 'Average MIC Score'])
+    mic_df.sort_values(by='Average MIC Score', ascending=False, inplace=True)
+    
+    print("\nAverage MIC Scores Across 10 Folds for Categorical Variables:")
+    print(mic_df)
+    return mic_df
+
+# Use the defined StratifiedKFold for 10-fold cross-validation
+mic_scores_df = calculate_mic_with_cv(X_train[categorical_features], y_train, skf)
+
+# INSIGHTS: Drop the following columns --> ['Gender', 'Department', 'EducationField'] because treshold MIC score lower than 0.1
+
+#-------------------------------------------
+# 4.2.3 Results - Categorical Features to drop
+#-------------------------------------------
+
+X_train_categorical.drop(['Gender','Department', 'EducationField'], axis=1, inplace=True)
 
 #-------------------------------------------
 #-------------------------------------------
@@ -623,17 +681,21 @@ def select_best_features(X, y):
 
     return results
 
-# Usage
-summary_df = select_best_features(X_train_numerical, y_train)
-summary_df
+numerical_ranking = select_best_features(X_train_numerical,y_train)
+numerical_ranking['Total_Sum'] = numerical_ranking.sum(axis=1) 
+numerical_ranking['Decision'] = np.select(
+    [
+        numerical_ranking['Total_Sum'] < 15,
+        (numerical_ranking['Total_Sum'] >= 15) & (numerical_ranking['Total_Sum'] < 20),
+        numerical_ranking['Total_Sum'] >= 20
+    ],
+    ['remove', 'try', 'keep']
+)
+numerical_ranking
 
-# INSIGHTS: Bruno - parei aqui - acho que devemos discutir a feature selection
-# REVER TUDO JUNTOS
-# USAR MAIS MODELOS PARA AS VARIAVEIS CATEGORICAS
-# 1. Drop the following columns --> ['Education', 'MonthlyRate', 'PercentSalaryHike', 'PerformanceRating']
-# 2. Try models with the following columns --> ['DailyRate', 'EnvironmentSatisfaction', 'HourlyRate', 'JobSatisfaction', 'RelationshipSatisfaction', 'TrainningTimesLastYear','WorkLifeBalance', 'YearsSinceLastPromotion']
-variables_to_drop = ['Education', 'MonthlyRate', 'PercentSalaryHike', 'PerformanceRating']
-variables_to_try = variables_to_drop + ['DailyRate', 'EnvironmentSatisfaction', 'HourlyRate', 'JobSatisfaction', 'RelationshipSatisfaction', 'TrainningTimesLastYear','WorkLifeBalance', 'YearsSinceLastPromotion']
+# Defining new X_train based on X_train_numerical to keep/try and remaining categorical variables
+variables_to_keep = numerical_ranking[numerical_ranking['Decision'] == 'keep'].index.tolist() + X_train_categorical.columns.tolist()
+variables_to_try = numerical_ranking[numerical_ranking['Decision'].isin(['keep', 'try'])].index.tolist() + X_train_categorical.columns.tolist()
 
-X_train1 = X_train.drop(variables_to_drop, axis=1)
-X_train2 = X_train.drop(variables_to_try, axis=1)
+X_train_keep = X_train[variables_to_keep]
+X_train_try = X_train[variables_to_try]
