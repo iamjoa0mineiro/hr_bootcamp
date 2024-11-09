@@ -701,14 +701,26 @@ print(numerical_ranking)
 
 # Defining new X_train based on X_train_numerical to keep/try and remaining categorical variables
 variables_to_keep = numerical_ranking[numerical_ranking['Decision'] == 'keep'].index.tolist() + X_train_categorical.columns.tolist()
-variables_to_try = numerical_ranking[numerical_ranking['Decision'].isin(['try'])].index.tolist()
+variables_to_try_and_keep = numerical_ranking[numerical_ranking['Decision'].isin(['keep', 'try'])].index.tolist() + X_train_categorical.columns.tolist()
 
 X_train_keep = X_train[variables_to_keep]
-X_train_try = X_train[variables_to_try]
+X_train_try_and_keep = X_train[variables_to_try_and_keep]
 
 #variables_to_try = numerical_ranking[numerical_ranking['Decision'].isin(['keep', 'try'])].index.tolist() + X_train_categorical.columns.tolist()
 
+#all_combinations = []
+#for r in range(len(consider_indices) + 1):
+    #comb = list(itertools.combinations(consider_indices, r))
+    #all_combinations.extend(comb)
  
+#final_combinations = [keep_indices + list(comb) for comb in all_combinations]
+ 
+#final_combinations
+
+
+X_to_train = X_train_try_and_keep 
+
+
 
 # ===========================================
 # SECTION 5: Modeling and Evaluation
@@ -753,7 +765,7 @@ X_train_final_keep = pd.concat([X_train_scaled_keep, X_train_encoded_cat], axis=
 # -------------------------------------------
 
 # Define Feature Combinations
-combination_1_features = X_train_final_keep.columns.tolist() + variables_to_try
+combination_1_features = X_train_final_keep.columns.tolist() + variables_to_try_and_keep
 combination_2_features = X_train_final_keep.columns.tolist() + ['DailyRate', 'NumCompaniesWorked', 'TrainingTimesLastYear', 'YearsAtCompany']
 combination_3_features = X_train_final_keep.columns.tolist() + ['DistanceFromHome', 'NumCompaniesWorked']
 combination_4_features = X_train_final_keep.columns.tolist() + ['NumCompaniesWorked']
