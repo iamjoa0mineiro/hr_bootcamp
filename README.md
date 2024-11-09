@@ -57,11 +57,15 @@ MIC DONE
 Feature Selection for Categorical Variables is finished
 New variable for the random state r_state = 99.
 
+08/11_2024 - Raysa
+Modelling
+
 Next Steps:
-MIC for categorical variables - DONE
-Tabela Feature Selection: DONE
-    - Coluna para o sum total
-    - Selecionar o que é para manter e retirar com base nas regras dos Joões
+- Use X_to_train
+- SMOTE or SMOTE NC
+- One Hot Encoding (create dummies)
+- Scale the variables (use MinMaxScaler) - we can use more models
+- Apply the models 
 
 Modeling the Data: NEXT
 
