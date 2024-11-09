@@ -7,19 +7,23 @@ import seaborn as sns
 import squarify
 import numpy as np
 from scipy import stats
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.preprocessing import RobustScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
 from sklearn.feature_selection import RFE # wrapper method
 from sklearn.linear_model import LogisticRegression # (This is one possible model to apply inside RFE)
 from sklearn.linear_model import LassoCV # embedded method
 from sklearn.tree import DecisionTreeClassifier # embedded method
-from sklearn.model_selection import StratifiedKFold
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
 from sklearn.feature_selection import SelectKBest, chi2, VarianceThreshold, mutual_info_classif
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from collections import Counter
+from itertools import chain, combinations
 
 
 # =================================================
@@ -666,7 +670,7 @@ def select_best_features(X, y):
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
         # Scale data
-        scaler = MinMaxScaler().fit(X_train)
+        scaler = RobustScaler().fit(X_train)
         X_train_scaled = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns)
 
         # Apply feature selection methods
@@ -689,13 +693,177 @@ numerical_ranking['Decision'] = np.select(
         (numerical_ranking['Total_Sum'] >= 15) & (numerical_ranking['Total_Sum'] < 20),
         numerical_ranking['Total_Sum'] >= 20
     ],
-    ['remove', 'try', 'keep']
+    ['remove', 'try', 'keep'],
+    default='remove'  # Ensure the default is a string matching the type of choices
 )
-numerical_ranking
+
+print(numerical_ranking)
 
 # Defining new X_train based on X_train_numerical to keep/try and remaining categorical variables
 variables_to_keep = numerical_ranking[numerical_ranking['Decision'] == 'keep'].index.tolist() + X_train_categorical.columns.tolist()
-variables_to_try = numerical_ranking[numerical_ranking['Decision'].isin(['keep', 'try'])].index.tolist() + X_train_categorical.columns.tolist()
+variables_to_try = numerical_ranking[numerical_ranking['Decision'].isin(['try'])].index.tolist()
 
 X_train_keep = X_train[variables_to_keep]
 X_train_try = X_train[variables_to_try]
+
+# ===========================================
+# SECTION 5: Modeling and Evaluation
+# ===========================================
+
+# -------------------------------------------
+# 5.1. Preparing the Data for Modeling
+# -------------------------------------------
+
+# Step 1: Prepare Numerical Features
+# Extract numerical columns from the 'keep' dataset
+numerical_columns_keep = X_train_keep.select_dtypes(include=[np.number]).columns
+
+# Step 1.1: Scaling the Numerical Features
+# Apply RobustScaler to the numerical columns of the "keep" features
+scaler = RobustScaler().fit(X_train_keep[numerical_columns_keep])
+X_train_scaled_keep = pd.DataFrame(scaler.transform(X_train_keep[numerical_columns_keep]),
+                                   columns=numerical_columns_keep, index=X_train_keep.index)
+
+# Step 2: One-Hot Encode Categorical Features
+# Extract categorical columns from 'X_train_categorical'
+categorical_features = X_train_categorical.columns
+encoder = OneHotEncoder(drop='first', sparse_output=False).fit(X_train_categorical)
+
+# Apply the encoder to the categorical columns
+X_train_encoded_cat = pd.DataFrame(encoder.transform(X_train_categorical),
+                                   columns=encoder.get_feature_names_out(categorical_features),
+                                   index=X_train_categorical.index)
+
+# Convert the values to integer type
+X_train_encoded_cat = X_train_encoded_cat.astype(int)
+
+# Display to verify the values are now integers
+print(X_train_encoded_cat.head())
+
+# Step 3: Combine Numerical and Categorical Features (for "Keep" Features)
+# This DataFrame contains all numerical features marked as 'keep' + all categorical features
+X_train_final_keep = pd.concat([X_train_scaled_keep, X_train_encoded_cat], axis=1)
+
+# -------------------------------------------
+# 5.2. Modeling with Specific Combinations of "Try" Features
+# -------------------------------------------
+
+# Define Feature Combinations
+combination_1_features = X_train_final_keep.columns.tolist() + variables_to_try
+combination_2_features = X_train_final_keep.columns.tolist() + ['DailyRate', 'NumCompaniesWorked', 'TrainingTimesLastYear', 'YearsAtCompany']
+combination_3_features = X_train_final_keep.columns.tolist() + ['DistanceFromHome', 'NumCompaniesWorked']
+combination_4_features = X_train_final_keep.columns.tolist() + ['NumCompaniesWorked']
+combination_5_features = X_train_final_keep.columns.tolist() + ['JobInvolvement', 'NumCompaniesWorked', 'PercentSalaryHike', 'YearsAtCompany']
+combination_6_features = X_train_final_keep.columns.tolist() + ['DailyRate', 'JobInvolvement', 'TrainingTimesLastYear']
+combination_7_features = X_train_final_keep.columns.tolist()
+
+# List all combinations
+combinations = [
+    ("Combination 1", combination_1_features),
+    ("Combination 2", combination_2_features),
+    ("Combination 3", combination_3_features),
+    ("Combination 4", combination_4_features),
+    ("Combination 5", combination_5_features),
+    ("Combination 6", combination_6_features),
+    ("Combination 7", combination_7_features)
+]
+
+# -------------------------------------------
+# 5.3. Evaluating Each Combination of Features
+# -------------------------------------------
+
+# Initialize models
+model_KNN = KNeighborsClassifier()
+model_DT = DecisionTreeClassifier(random_state=99)
+model_NN = MLPClassifier(max_iter=2000, random_state=99)
+model_RF = RandomForestClassifier(random_state=99, n_jobs=-1)
+model_GB = GradientBoostingClassifier(random_state=99)
+model_SVC = SVC(random_state=99)
+
+# Dictionary of models to evaluate
+models = {
+    "KNN": model_KNN,
+    "DT": model_DT,
+    "NN": model_NN,
+    "RF": model_RF,
+    "GB": model_GB,
+    "SVC": model_SVC
+}
+
+# Function to encode and prepare data for a combination
+def prepare_combination(features, X_train, X_train_categorical, encoder):
+    # Split features into numerical and categorical
+    numerical_features = [feature for feature in features if feature in X_train.columns]
+    categorical_features = [feature for feature in features if feature in X_train_categorical.columns]
+    
+    # Extract numerical data
+    X_train_comb_numerical = X_train[numerical_features]
+    
+    # If there are categorical features, encode them
+    if categorical_features:
+        X_train_comb_cat = pd.DataFrame(encoder.transform(X_train_categorical[categorical_features]),
+                                        columns=encoder.get_feature_names_out(categorical_features),
+                                        index=X_train.index)
+    else:
+        X_train_comb_cat = pd.DataFrame(index=X_train.index)  # Empty DataFrame if no categorical features
+
+    # Combine numerical and encoded categorical data
+    X_train_comb = pd.concat([X_train_comb_numerical, X_train_comb_cat], axis=1)
+    
+    return X_train_comb
+
+# Evaluate each combination
+def evaluate_combination(X, y, models):
+    skf = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)
+    df_results = pd.DataFrame(columns=["Train", "Validation"], index=models.keys())
+
+    # Perform cross-validation and evaluation
+    for model_name, model in models.items():
+        score_train, score_val = [], []
+
+        for train_index, val_index in skf.split(X, y):
+            X_train_fold, X_val_fold = X.iloc[train_index], X.iloc[val_index]
+            y_train_fold, y_val_fold = y.iloc[train_index], y.iloc[val_index]
+
+            # Scale the data
+            scaler = MinMaxScaler().fit(X_train_fold)
+            X_train_fold = scaler.transform(X_train_fold)
+            X_val_fold = scaler.transform(X_val_fold)
+
+            # Fit model and predict
+            model.fit(X_train_fold, y_train_fold)
+            predictions_train = model.predict(X_train_fold)
+            predictions_val = model.predict(X_val_fold)
+
+            score_train.append(f1_score(y_train_fold, predictions_train))
+            score_val.append(f1_score(y_val_fold, predictions_val))
+
+        avg_train = round(np.mean(score_train), 3)
+        avg_val = round(np.mean(score_val), 3)
+        std_train = round(np.std(score_train), 2)
+        std_val = round(np.std(score_val), 2)
+
+        df_results.loc[model_name] = f"{avg_train} +/- {std_train}", f"{avg_val} +/- {std_val}"
+
+    return df_results
+
+# Run evaluations
+for comb_name, comb_features in combinations:
+    print(f"Evaluating models for {comb_name}...\n")
+    try:
+        # Prepare data for the current combination
+        X_comb = prepare_combination(comb_features, X_train_keep, X_train_categorical, encoder)
+
+        # Ensure y_train is available
+        y_comb = y_train  # Assuming y_train is defined and available
+
+        # Evaluate models
+        df_comb_results = evaluate_combination(X_comb, y_comb, models)
+
+        # Print results
+        print(f"Results for {comb_name}:")
+        print(df_comb_results)
+        print("\n=========================================\n")
+
+    except KeyError as e:
+        print(f"KeyError in {comb_name}: {e}")
