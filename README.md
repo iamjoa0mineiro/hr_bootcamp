@@ -62,10 +62,26 @@ Modelling
 
 Next Steps:
 - Use X_to_train
-- SMOTE or SMOTE NC
-- One Hot Encoding (create dummies)
-- Scale the variables (use MinMaxScaler) - we can use more models
+- SMOTE or SMOTE NC - FEITO
+- One Hot Encoding (create dummies) - FEITO
+- Scale the variables (use MinMaxScaler) - we can use more models - FEITO
 - Apply the models 
+
+11/11/2024 - João Grade
+
+One Hot Enconding : Teve que se fazer antes do Smote NC porque ele não compreende variáveis categóricas com strings, têm que se integers. O próprio SMOTE NC faz, mas optei por fazer antes para poder ver o que ele estava a fazer
+SMOTE NC feito: para não haver problemas de versões, corram isto: pip install --upgrade imbalanced-learn scikit-learn numpy
+MinMax Scaler: Tem que se fazer só às numerical variables, não se pode fazer a variáveis binárias. O MinMax Scaler pega em variáveis numéricas e transforma-as em variáveis entre 0 e 1, o que faz sentido em variáveis numéricas. Ora, se fizermos isso em variáveis binárias, elas perdem o seu significado, porque o valor ou é (1) ou não é (0), não faz sentido ter o valor de 0,5. Do que pesquisei tanto em artigos como no stackoverflow a opinião global é que standardizar dados só se faz em variáveis numéricas, não se faz em variáveis binárias por perderem o significado. 
+
+- Modelos de classificação que podemos usar tendo em conta que temos variáveis numéricas e binárias:
+    - Logistic Regression
+    - Decision Trees
+    - Random Forests
+    - Gradient Boosting
+    - Support Vector Machine (SVM)
+    - Neural Networks 
+    - Naive Bayes
+
 
 Modeling the Data: NEXT
 

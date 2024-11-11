@@ -24,6 +24,11 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from collections import Counter
 from itertools import chain, combinations
+from imblearn.over_sampling import SMOTENC
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler
+
+
 
 
 # =================================================
@@ -720,6 +725,31 @@ X_train_try_and_keep = X_train[variables_to_try_and_keep]
 
 X_to_train = X_train_try_and_keep 
 
+# Apply one hot enconding before SMOTE NC
+
+categorical_columns = ['BusinessTravel', 'JobRole', 'MaritalStatus', 'OverTime']
+X_categorical_features = X_to_train[categorical_columns]
+encoder = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_features)
+X_train_encoded_cat = pd.DataFrame(encoder.transform(X_categorical_features),
+                                   columns=encoder.get_feature_names_out(categorical_columns),
+                                   index=X_categorical_features.index)
+X_train_encoded_cat = X_train_encoded_cat.astype(int)
+X_no_categorical = X_to_train.drop(columns=categorical_columns)
+X_train_final_keep = pd.concat([X_no_categorical, X_train_encoded_cat], axis=1)
+categorical_column_indices=[14,15,16,17,18,19,20,21,22,23,24,25,26]
+
+#SMOTE NC to solve class imbalance 
+smote_nc = SMOTENC(categorical_features=categorical_column_indices)
+X_resampled, y_resampled = smote_nc.fit_resample(X_train_final_keep, y_train)
+
+#MinMaxScaler 
+numerical_features = ['Age', 'DailyRate','DistanceFromHome','EnvironmentSatisfaction','HourlyRate','JobInvolvement','JobSatisfaction','MonthlyIncome','NumCompaniesWorked','PercentSalaryHike','StockOptionLevel','TotalWorkingYears','TrainingTimesLastYear','YearsAtCompany']
+X_numerical = X_resampled[numerical_features]
+scaler = MinMaxScaler()
+X_numerical_scaled = scaler.fit_transform(X_numerical)
+X_numerical_scaled_df = pd.DataFrame(X_numerical_scaled, columns=numerical_features)
+X_binary = X_resampled.drop(columns=numerical_features)
+X_resampled_scaled = pd.concat([X_numerical_scaled_df, X_binary], axis=1)
 
 
 # ===========================================
