@@ -837,12 +837,14 @@ show_results(df_keep, X_resampled_scaled2, y_resampled2, model_LogR, model_DT)
 
 # Logistic Regression
 #keep + try data
-param_grid = [    
-    {'penalty' : ['l1', 'l2', 'elasticnet', 'none'],
-    'C' : np.logspace(-4, 4, 20),
-    'solver' : ['lbfgs','newton-cg','liblinear','sag','saga'],
-    'max_iter' : [100, 1000,2500, 5000]
-    }
+param_grid = [
+    {
+        'penalty': ['l2'],
+        'C': np.logspace(-4, 4, 20),
+        'solver': ['lbfgs', 'newton-cg', 'sag'],
+        'max_iter': [5000, 10000]
+    },
+
 ]
 logModel = LogisticRegression()       
 clf = GridSearchCV(logModel, param_grid = param_grid, scoring = 'f1', return_train_score = True, cv = 5)
@@ -850,8 +852,8 @@ best_clf = clf.fit(X_resampled_scaled,y_resampled)
 print("Best Hyperparameters: ", best_clf.best_params_)
 print("Best Score: ", best_clf.best_score_)
 
-#Best Hyperparameters:  {'C': 1.623776739188721, 'max_iter': 100, 'penalty': 'l2', 'solver': 'lbfgs'}
-#Best Score:  0.8303727529725732
+#Best Hyperparameters:  {'C': 0.615848211066026, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'lbfgs'}
+#Best Score:  0.8307486444070594
 
 #keep data
 clf2 = GridSearchCV(logModel, param_grid = param_grid, scoring = 'f1', return_train_score = True, cv = 5)
@@ -859,35 +861,35 @@ best_clf2 = clf.fit(X_resampled_scaled2,y_resampled2)
 print("Best Hyperparameters: ", best_clf2.best_params_)
 print("Best Score: ", best_clf2.best_score_)
 
-#Best Hyperparameters:  {'C': 11.288378916846883, 'max_iter': 100, 'penalty': 'l1', 'solver': 'liblinear'}
-#Best Score:  0.7898557133400309
+#Best Hyperparameters:  {'C': 0.23357214690901212, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'lbfgs'}
+#Best Score:  0.7944243945288617
 
 #Decision Tree
 #keep + try
 DTModel = DecisionTreeClassifier()
-tree_param={'criterion':['gini','entropy','log_loss'],'max_depth':list(range(200))}
+tree_param={'criterion':['gini','entropy','log_loss'],'max_depth':list(range(1, 200))}
 clf3 = GridSearchCV(DTModel, param_grid = tree_param, scoring = 'f1', return_train_score = True, cv = 5)
 best_clf3 = clf3.fit(X_resampled_scaled,y_resampled)
 print("Best Hyperparameters: ", best_clf3.best_params_)
 print("Best Score: ", best_clf3.best_score_)
 
-#Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 116}
-#Best Score:  0.8328544387333017
+#Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 85}
+#Best Score:  0.8292449164104513
 #keep
 clf4 = GridSearchCV(DTModel, param_grid = tree_param, scoring = 'f1', return_train_score = True, cv = 5)
 best_clf4 = clf4.fit(X_resampled_scaled2,y_resampled2)
 print("Best Hyperparameters: ", best_clf4.best_params_)
 print("Best Score: ", best_clf4.best_score_)
 
-#Best Hyperparameters:  {'criterion': 'entropy', 'max_depth': 11}
-#Best Score:  0.8416895936131228
+#Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 40}
+#Best Score:  0.8555795811256541
 
 #Based on the previous results, both models were ran with keep features and keep+try features
 #Creating models
-finalkeeptry_dt = DecisionTreeClassifier(criterion = 'gini', max_depth = 116)
-finalkeeptry_logr = LogisticRegression(C= 1.623776739188721, max_iter= 100, penalty= 'l2', solver= 'lbfgs')
-finalkeep_dt = DecisionTreeClassifier(criterion= 'entropy', max_depth= 11)
-finalkeep_logr = LogisticRegression(C= 11.288378916846883, max_iter= 100, penalty= 'l1', solver= 'liblinear')
+finalkeeptry_dt = DecisionTreeClassifier(criterion = 'gini', max_depth = 85)
+finalkeeptry_logr = LogisticRegression(C= 0.615848211066026, max_iter= 5000, penalty= 'l2', solver= 'lbfgs')
+finalkeep_dt = DecisionTreeClassifier(criterion= 'gini', max_depth= 40)
+finalkeep_logr = LogisticRegression(C= 0.23357214690901212, max_iter= 5000, penalty= 'l2', solver= 'lbfgs')
 #Running models
 df_final_models1 = pd.DataFrame(columns = ['Train','Validation'], index = ['Best LogR','Best DT'])
 show_results(df_final_models1, X_resampled_scaled, y_resampled, finalkeeptry_logr, finalkeeptry_dt)
@@ -920,8 +922,8 @@ roc_auc_modelkeeptryLogR = roc_auc_score(y_val, prob_modelkeeptryLogR[:, 1])
 print(roc_auc_modelkeeptryDT)
 print(roc_auc_modelkeeptryLogR)
 
-#0.7919075144508672 - DT
-#0.9272277723946674 - LogR
+#0.8410404624277457 - DT
+#0.9182398342744494 - LogR
 
 
 #keep data
@@ -946,8 +948,8 @@ roc_auc_modelkeepLogR = roc_auc_score(y_val2, prob_modelkeepLogR[:, 1])
 print(roc_auc_modelkeepDT)
 print(roc_auc_modelkeepLogR)
 
-#0.8456847873300144 -> DT
-#0.890641184135788 -> LogR
+#0.8410404624277457 -> DT
+#0.8843596511744463 -> LogR
 
 #Best model is LogR on keep+try features 
 
@@ -970,5 +972,5 @@ plt.ylabel('Precision')
 plt.legend()
 plt.show()
 
-#Best Threshold=0.485693, F-Score=0.883
+#Best Threshold=0.417559, F-Score=0.870
 
