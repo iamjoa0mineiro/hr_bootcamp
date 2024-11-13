@@ -985,8 +985,8 @@ best_svm = clf_svm.fit(X_resampled_scaled, y_resampled)
 print("Best SVM Hyperparameters: ", best_svm.best_params_)
 print("Best SVM Score: ", best_svm.best_score_)
 
-# Best SVM Hyperparameters:  {'C': 1, 'gamma': 'scale', 'kernel': 'poly'}
-# Best SVM Score:  0.856913314750406
+# Best SVM Hyperparameters:  {'C': 1, 'gamma': 'scale', 'kernel': 'rbf'}
+# Best SVM Score:  0.8630373060692692
 
 final_svm = SVC(probability=True, **best_svm.best_params_)
 
@@ -1008,8 +1008,8 @@ best_rf = clf_rf.fit(X_resampled_scaled, y_resampled)
 print("Best RF Hyperparameters: ", best_rf.best_params_)
 print("Best RF Score: ", best_rf.best_score_)
 
-# Best RF Hyperparameters:  {'criterion': 'entropy', 'max_depth': 20, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 200}
-# Best RF Score:  0.9067569124667912
+# Best RF Hyperparameters:  {'criterion': 'entropy', 'max_depth': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 200}
+# Best RF Score:  0.9004727712975015
 
 final_rf = RandomForestClassifier(random_state=99, **best_rf.best_params_)
 
@@ -1018,8 +1018,8 @@ df_final_models1 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best SV
 show_results(df_final_models1, X_resampled_scaled, y_resampled, final_svm, final_rf)
 print(df_final_models1)
 
-# 0.877 -> SVM
-# 0.909 -> RF
+# 0.883 -> SVM
+# 0.91 -> RF
 # Best model on Keep+Try dataset is RF
 
 # Train and Evaluate Models on Keep Dataset
@@ -1027,8 +1027,8 @@ df_final_models2 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best SV
 show_results(df_final_models2, X_resampled_scaled2, y_resampled2, final_svm, final_rf)
 print(df_final_models2)
 
-# 0.848 -> SVM
-# 0.897 -> RF
+# 0.846 -> SVM
+# 0.895 -> RF
 # Best model on Keep dataset is RF
 
 # Threshold Adjustment for SVM
@@ -1048,7 +1048,7 @@ plt.ylabel('Precision')
 plt.legend()
 plt.show()
 
-# Best Threshold (SVM)=0.599842, F-Score=0.896
+# Best Threshold (SVM)=0.381382, F-Score=0.881
 
 # Threshold Adjustment for RF
 final_model_rf = final_rf.fit(X_train, y_train)
@@ -1066,7 +1066,7 @@ plt.ylabel('Precision')
 plt.legend()
 plt.show()
 
-# Best Threshold (RF)=0.653636, F-Score=0.917
+# Best Threshold (RF)=0.555000, F-Score=0.917
 
 # ROC-AUC Comparison
 fpr_svm, tpr_svm, _ = roc_curve(y_val, predict_proba_svm[:, 1])
@@ -1093,5 +1093,5 @@ print("Feature Importances (Random Forest):")
 print(importance_df)
 
 # The Random Forest model is the best choice here because:
-# 1. Higher AUC (RF AUC = 0.964 > SVM AUC = 0.948): Indicates better performance in distinguishing between classes across all thresholds.
+# 1. Higher AUC (RF AUC = 0.967 > SVM AUC = 0.947): Indicates better performance in distinguishing between classes across all thresholds.
 # 2. Flexibility: Random Forest generally handles feature importance and noisy data better than SVM.
