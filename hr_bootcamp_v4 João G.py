@@ -7,32 +7,21 @@ import seaborn as sns
 import squarify
 import numpy as np
 from scipy import stats
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import RobustScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
-from sklearn.feature_selection import RFE # wrapper method
-from sklearn.linear_model import LogisticRegression # (This is one possible model to apply inside RFE)
-from sklearn.linear_model import LassoCV # embedded method
-from sklearn.tree import DecisionTreeClassifier # embedded method
+from sklearn.linear_model import LogisticRegression, LassoCV 
+from sklearn.tree import DecisionTreeClassifier 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
-from sklearn.feature_selection import SelectKBest, chi2, VarianceThreshold, mutual_info_classif
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
-from imblearn.over_sampling import SMOTE
+from sklearn.feature_selection import RFE, SelectKBest, chi2, VarianceThreshold, mutual_info_classif
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score, roc_curve, roc_auc_score, precision_recall_curve
+from imblearn.over_sampling import SMOTE, SMOTENC
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from collections import Counter
 from itertools import chain, combinations
-from imblearn.over_sampling import SMOTENC
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import f1_score
-from sklearn.metrics import roc_curve, roc_auc_score
-from sklearn.metrics import precision_recall_curve
 
 # =================================================
 # SECTION 2: Data Collection and Initial Processing
@@ -726,7 +715,7 @@ X_train_try_and_keep = X_train[variables_to_try_and_keep]
 #final_combinations
 
 
-X_to_train = X_train_try_and_keep 
+X_to_train = X_train_try_and_keep.copy()
 
 # Apply one hot enconding before SMOTE NC
 
@@ -972,3 +961,129 @@ plt.show()
 
 #Best Threshold=0.485693, F-Score=0.883
 
+# SVM
+model_SVM = SVC(probability=True, random_state=99)
+
+param_grid_svm = {
+    'C': [0.1, 1, 10, 100],
+    'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+    'gamma': ['scale', 'auto']
+}
+
+svm_model = SVC(probability=True)
+clf_svm = GridSearchCV(svm_model, param_grid=param_grid_svm, scoring='f1', return_train_score=True, cv=5)
+best_svm = clf_svm.fit(X_resampled_scaled, y_resampled)
+
+print("Best SVM Hyperparameters: ", best_svm.best_params_)
+print("Best SVM Score: ", best_svm.best_score_)
+
+# Best SVM Hyperparameters:  {'C': 1, 'gamma': 'scale', 'kernel': 'poly'}
+# Best SVM Score:  0.856913314750406
+
+final_svm = SVC(probability=True, **best_svm.best_params_)
+
+# Random Forest (RF)
+model_RF = RandomForestClassifier(random_state=99)
+
+param_grid_rf = {
+    'n_estimators': [10, 50, 100, 200],
+    'max_depth': [None, 10, 20, 30, 50],
+    'criterion': ['gini', 'entropy'],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+}
+
+rf_model = RandomForestClassifier(random_state=99)
+clf_rf = GridSearchCV(rf_model, param_grid=param_grid_rf, scoring='f1', return_train_score=True, cv=5)
+best_rf = clf_rf.fit(X_resampled_scaled, y_resampled)
+
+print("Best RF Hyperparameters: ", best_rf.best_params_)
+print("Best RF Score: ", best_rf.best_score_)
+
+# Best RF Hyperparameters:  {'criterion': 'entropy', 'max_depth': 20, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 200}
+# Best RF Score:  0.9067569124667912
+
+final_rf = RandomForestClassifier(random_state=99, **best_rf.best_params_)
+
+# Train and Evaluate Models on Keep+Try Dataset
+df_final_models1 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best SVM', 'Best RF'])
+show_results(df_final_models1, X_resampled_scaled, y_resampled, final_svm, final_rf)
+print(df_final_models1)
+
+# 0.877 -> SVM
+# 0.909 -> RF
+# Best model on Keep+Try dataset is RF
+
+# Train and Evaluate Models on Keep Dataset
+df_final_models2 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best SVM', 'Best RF'])
+show_results(df_final_models2, X_resampled_scaled2, y_resampled2, final_svm, final_rf)
+print(df_final_models2)
+
+# 0.848 -> SVM
+# 0.897 -> RF
+# Best model on Keep dataset is RF
+
+# Threshold Adjustment for SVM
+X_train, X_val, y_train, y_val = train_test_split(X_resampled_scaled, y_resampled, train_size=0.8, random_state=99, stratify=y_resampled)
+final_model_svm = final_svm.fit(X_train, y_train)
+predict_proba_svm = final_model_svm.predict_proba(X_val)
+
+precision, recall, thresholds = precision_recall_curve(y_val, predict_proba_svm[:, 1])
+fscore = np.where((precision + recall) > 0, (2 * precision * recall) / (precision + recall), 0)
+ix = np.argmax(fscore)
+print('Best Threshold (SVM)=%f, F-Score=%.3f' % (thresholds[ix], fscore[ix]))
+
+plt.plot(recall, precision, marker='.', label='SVM')
+plt.scatter(recall[ix], precision[ix], marker='o', color='black', label='Best')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.legend()
+plt.show()
+
+# Best Threshold (SVM)=0.599842, F-Score=0.896
+
+# Threshold Adjustment for RF
+final_model_rf = final_rf.fit(X_train, y_train)
+predict_proba_rf = final_model_rf.predict_proba(X_val)
+
+precision_rf, recall_rf, thresholds_rf = precision_recall_curve(y_val, predict_proba_rf[:, 1])
+fscore_rf = np.where((precision_rf + recall_rf) > 0, (2 * precision_rf * recall_rf) / (precision_rf + recall_rf), 0)
+ix_rf = np.argmax(fscore_rf)
+print('Best Threshold (RF)=%f, F-Score=%.3f' % (thresholds_rf[ix_rf], fscore_rf[ix_rf]))
+
+plt.plot(recall_rf, precision_rf, marker='.', label='Random Forest')
+plt.scatter(recall_rf[ix_rf], precision_rf[ix_rf], marker='o', color='black', label='Best')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.legend()
+plt.show()
+
+# Best Threshold (RF)=0.653636, F-Score=0.917
+
+# ROC-AUC Comparison
+fpr_svm, tpr_svm, _ = roc_curve(y_val, predict_proba_svm[:, 1])
+roc_auc_svm = roc_auc_score(y_val, predict_proba_svm[:, 1])
+
+fpr_rf, tpr_rf, _ = roc_curve(y_val, predict_proba_rf[:, 1])
+roc_auc_rf = roc_auc_score(y_val, predict_proba_rf[:, 1])
+
+plt.plot(fpr_svm, tpr_svm, label=f"SVM (AUC = {roc_auc_svm:.3f})")
+plt.plot(fpr_rf, tpr_rf, label=f"Random Forest (AUC = {roc_auc_rf:.3f})")
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend()
+plt.show()
+
+print("SVM ROC-AUC:", roc_auc_svm)
+print("Random Forest ROC-AUC:", roc_auc_rf)
+
+# Random Forest Feature Importance
+feature_names = X_resampled_scaled.columns
+importances = final_model_rf.feature_importances_
+importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}).sort_values(by='Importance', ascending=False)
+print("Feature Importances (Random Forest):")
+print(importance_df)
+
+# The Random Forest model is the best choice here because:
+# 1. Higher AUC (RF AUC = 0.964 > SVM AUC = 0.948): Indicates better performance in distinguishing between classes across all thresholds.
+# 2. Flexibility: Random Forest generally handles feature importance and noisy data better than SVM.
