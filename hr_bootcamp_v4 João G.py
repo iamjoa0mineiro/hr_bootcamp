@@ -731,7 +731,7 @@ X_train_final_keep = pd.concat([X_no_categorical, X_train_encoded_cat], axis=1)
 categorical_column_indices=[14,15,16,17,18,19,20,21,22,23,24,25,26]
 
 #SMOTE NC to solve class imbalance 
-smote_nc = SMOTENC(categorical_features=categorical_column_indices)
+smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
 X_resampled, y_resampled = smote_nc.fit_resample(X_train_final_keep, y_train)
 
 #MinMaxScaler 
@@ -758,7 +758,7 @@ X_train_final_keep2 = pd.concat([X_no_categorical2, X_train_encoded_cat2], axis=
 categorical_column_indices2=[7,8,9,10,11,12,13,14,15,16,17,18,19]
 
 #SMOTE NC to solve class imbalance 
-smote_nc = SMOTENC(categorical_features=categorical_column_indices2)
+smote_nc = SMOTENC(categorical_features=categorical_column_indices2, random_state=99)
 X_resampled2, y_resampled2 = smote_nc.fit_resample(X_train_final_keep2, y_train)
 
 #MinMaxScaler 
@@ -841,8 +841,10 @@ best_clf = clf.fit(X_resampled_scaled,y_resampled)
 print("Best Hyperparameters: ", best_clf.best_params_)
 print("Best Score: ", best_clf.best_score_)
 
-#Best Hyperparameters:  {'C': 0.615848211066026, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'lbfgs'}
-#Best Score:  0.8307486444070594
+
+#Best Hyperparameters:  {'C': 4.281332398719396, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'lbfgs'}
+#Best Score:  0.8381510774015452
+
 
 #keep data
 clf2 = GridSearchCV(logModel, param_grid = param_grid, scoring = 'f1', return_train_score = True, cv = 5)
@@ -850,8 +852,11 @@ best_clf2 = clf.fit(X_resampled_scaled2,y_resampled2)
 print("Best Hyperparameters: ", best_clf2.best_params_)
 print("Best Score: ", best_clf2.best_score_)
 
-#Best Hyperparameters:  {'C': 0.23357214690901212, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'lbfgs'}
-#Best Score:  0.7944243945288617
+#Best Hyperparameters:  {'C': 0.23357214690901212, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'newton-cg'}
+#Best Score:  0.8066836528116751
+
+
+
 
 #Decision Tree
 #keep + try
@@ -862,23 +867,24 @@ best_clf3 = clf3.fit(X_resampled_scaled,y_resampled)
 print("Best Hyperparameters: ", best_clf3.best_params_)
 print("Best Score: ", best_clf3.best_score_)
 
-#Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 85}
-#Best Score:  0.8292449164104513
+#Best Hyperparameters:  {'criterion': 'log_loss', 'max_depth': 102}
+#Best Score:  0.8387287502967876
+
 #keep
 clf4 = GridSearchCV(DTModel, param_grid = tree_param, scoring = 'f1', return_train_score = True, cv = 5)
 best_clf4 = clf4.fit(X_resampled_scaled2,y_resampled2)
 print("Best Hyperparameters: ", best_clf4.best_params_)
 print("Best Score: ", best_clf4.best_score_)
 
-#Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 40}
-#Best Score:  0.8555795811256541
+#Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 54}
+#Best Score:  0.8379540563975196
 
 #Based on the previous results, both models were ran with keep features and keep+try features
 #Creating models
-finalkeeptry_dt = DecisionTreeClassifier(criterion = 'gini', max_depth = 85)
-finalkeeptry_logr = LogisticRegression(C= 0.615848211066026, max_iter= 5000, penalty= 'l2', solver= 'lbfgs')
-finalkeep_dt = DecisionTreeClassifier(criterion= 'gini', max_depth= 40)
-finalkeep_logr = LogisticRegression(C= 0.23357214690901212, max_iter= 5000, penalty= 'l2', solver= 'lbfgs')
+finalkeeptry_dt = DecisionTreeClassifier(criterion = 'log_loss', max_depth = 102)
+finalkeeptry_logr = LogisticRegression(C= 4.281332398719396, max_iter= 5000, penalty= 'l2', solver= 'lbfgs')
+finalkeep_dt = DecisionTreeClassifier(criterion= 'gini', max_depth= 54)
+finalkeep_logr = LogisticRegression(C= 0.23357214690901212, max_iter= 5000, penalty= 'l2', solver= 'newton-cg')
 #Running models
 df_final_models1 = pd.DataFrame(columns = ['Train','Validation'], index = ['Best LogR','Best DT'])
 show_results(df_final_models1, X_resampled_scaled, y_resampled, finalkeeptry_logr, finalkeeptry_dt)
@@ -911,8 +917,8 @@ roc_auc_modelkeeptryLogR = roc_auc_score(y_val, prob_modelkeeptryLogR[:, 1])
 print(roc_auc_modelkeeptryDT)
 print(roc_auc_modelkeeptryLogR)
 
-#0.8410404624277457 - DT
-#0.9182398342744494 - LogR
+#0.8323699421965319 - DT
+#0.9193758561929901 - LogR
 
 
 #keep data
@@ -937,8 +943,8 @@ roc_auc_modelkeepLogR = roc_auc_score(y_val2, prob_modelkeepLogR[:, 1])
 print(roc_auc_modelkeepDT)
 print(roc_auc_modelkeepLogR)
 
-#0.8410404624277457 -> DT
-#0.8843596511744463 -> LogR
+#0.8208092485549133 -> DT
+#0.8842594139463397 -> LogR
 
 #Best model is LogR on keep+try features 
 
@@ -961,7 +967,7 @@ plt.ylabel('Precision')
 plt.legend()
 plt.show()
 
-#Best Threshold=0.417559, F-Score=0.870
+#Best Threshold=0.367009, F-Score=0.858
 
 # SVM
 model_SVM = SVC(probability=True, random_state=99)
