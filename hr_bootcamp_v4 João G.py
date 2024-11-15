@@ -715,10 +715,23 @@ X_train_try_and_keep = X_train[variables_to_try_and_keep]
 #final_combinations
 
 
+#==========================================
+# SECTION 5: Model & Assessment
+# ==========================================
+
+#-------------------------------------------
+#-------------------------------------------
+# 5.1 Class Imbalance and Data Normalization
+#-------------------------------------------
+#-------------------------------------------
+
+#-------------------------------------------
+# 5.1.1 Keep + Try
+#-------------------------------------------
+
 X_to_train = X_train_try_and_keep.copy()
 
 # Apply one hot enconding before SMOTE NC
-
 categorical_columns = ['BusinessTravel', 'JobRole', 'MaritalStatus', 'OverTime']
 X_categorical_features = X_to_train[categorical_columns]
 encoder = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_features)
@@ -743,8 +756,9 @@ X_numerical_scaled_df = pd.DataFrame(X_numerical_scaled, columns=numerical_featu
 X_binary = X_resampled.drop(columns=numerical_features)
 X_resampled_scaled = pd.concat([X_numerical_scaled_df, X_binary], axis=1)
 
-
-#Now for only the keep data 
+#-------------------------------------------
+# 5.1.2 Keep ONLY
+#-------------------------------------------
 
 categorical_columns2 = ['BusinessTravel', 'JobRole', 'MaritalStatus', 'OverTime']
 X_categorical_features2 = X_train_keep[categorical_columns2]
@@ -770,7 +784,15 @@ X_numerical_scaled_df2 = pd.DataFrame(X_numerical_scaled2, columns=numerical_fea
 X_binary2 = X_resampled2.drop(columns=numerical_features2)
 X_resampled_scaled2 = pd.concat([X_numerical_scaled_df2, X_binary2], axis=1)
 
-# Models -> Logistic Regression + Decision Trees
+#-------------------------------------------
+#-------------------------------------------
+# 5.2 Model Selection
+#-------------------------------------------
+#-------------------------------------------
+
+#-------------------------------------------
+# 5.2.1 Create Function Show Results
+#-------------------------------------------
 
 def select_best_models(xdata, ydata,model):
     skf = StratifiedKFold(n_splits = 5, random_state = 99, shuffle = True)
@@ -809,6 +831,12 @@ def show_results(df, xdata,ydata, *args):
         count+=1
     return df
 
+#-------------------------------------------
+# 5.2.2 Logistic Regression + Decision Trees
+#-------------------------------------------
+
+# 5.2.2.1 1st Try
+
 model_DT = DecisionTreeClassifier(max_depth = 3, random_state = 99)
 model_LogR = LogisticRegression(random_state=99)
 
@@ -822,9 +850,10 @@ show_results(df_keep, X_resampled_scaled2, y_resampled2, model_LogR, model_DT)
 
 #Best model based on f1score is Decision Tree. Based on overfitting, they're tied.
 
-#GridSearch 
+# 5.2.2.2 Grid Search
 
-# Logistic Regression
+# 5.2.2.2.1 Logistic Regression
+'''
 #keep + try data
 param_grid = [
     {
@@ -841,7 +870,6 @@ best_clf = clf.fit(X_resampled_scaled,y_resampled)
 print("Best Hyperparameters: ", best_clf.best_params_)
 print("Best Score: ", best_clf.best_score_)
 
-
 #Best Hyperparameters:  {'C': 4.281332398719396, 'max_iter': 5000, 'penalty': 'l2', 'solver': 'lbfgs'}
 #Best Score:  0.8381510774015452
 
@@ -856,9 +884,7 @@ print("Best Score: ", best_clf2.best_score_)
 #Best Score:  0.8066836528116751
 
 
-
-
-#Decision Tree
+# 5.2.2.2.2 Decision Tree
 #keep + try
 DTModel = DecisionTreeClassifier()
 tree_param={'criterion':['gini','entropy','log_loss'],'max_depth':list(range(1, 200))}
@@ -878,7 +904,8 @@ print("Best Score: ", best_clf4.best_score_)
 
 #Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 54}
 #Best Score:  0.8379540563975196
-
+'''
+# 5.2.2.2.3 Grid Search Results
 #Based on the previous results, both models were ran with keep features and keep+try features
 #Creating models
 finalkeeptry_dt = DecisionTreeClassifier(criterion = 'log_loss', max_depth = 102)
@@ -894,6 +921,7 @@ show_results(df_final_models2, X_resampled_scaled2, y_resampled2, finalkeep_logr
 
 #LogR on the keep+try dataset had the best validation f1 score with the least amount of overfitting. 
 
+# 5.2.2.3 ROC Curve
 #Now let's try to choose based on a ROC Curve
 #keep+try data
 X_train, X_val, y_train, y_val = train_test_split(X_resampled_scaled, y_resampled,
@@ -931,7 +959,7 @@ modelkeep_logr = finalkeep_logr.fit(X_train2, y_train2)
 prob_modelkeepDT =  modelkeep_dt.predict_proba(X_val2)
 prob_modelkeepLogR =  modelkeep_logr.predict_proba(X_val2)
 fpr_modelkeepDT, tpr_modelkeepDT, thresholds_modelkeepDT = roc_curve(y_val2, prob_modelkeepDT[:,1])
-fpr_modelkeeplogr, tpr_modelkeeplogr, thresholds_modelkeeplogr = roc_curve(y_val, prob_modelkeepLogR[:,1])
+fpr_modelkeeplogr, tpr_modelkeeplogr, thresholds_modelkeeplogr = roc_curve(y_val2, prob_modelkeepLogR[:,1])
 plt.plot(fpr_modelkeepDT, tpr_modelkeepDT,label="ROC Curve DT")
 plt.plot(fpr_modelkeeplogr, tpr_modelkeeplogr, label="ROC Curve LogR")
 plt.xlabel('FPR')
@@ -969,7 +997,10 @@ plt.show()
 
 #Best Threshold=0.367009, F-Score=0.858
 
-# SVM
+#-------------------------------------------
+# 5.2.3 SVM & Random Forest
+#-------------------------------------------
+
 model_SVM = SVC(probability=True, random_state=99)
 
 param_grid_svm = {
@@ -1095,3 +1126,148 @@ print(importance_df)
 # The Random Forest model is the best choice here because:
 # 1. Higher AUC (RF AUC = 0.967 > SVM AUC = 0.947): Indicates better performance in distinguishing between classes across all thresholds.
 # 2. Flexibility: Random Forest generally handles feature importance and noisy data better than SVM.
+
+#-------------------------------------------
+# 5.2.4 Gradient Boosting Classifier and Naive Bayes
+#-------------------------------------------
+
+# 5.2.4.1 Run Grid Search on the Models
+
+# 5.2.4.1.1 Gradient Boosting Classifier
+
+# Define the Parameter Grid
+"""
+param_grid_gb = {
+    'n_estimators': [50, 100, 200],          # Normally these numbers of trees is enough 
+    'learning_rate': [0.01, 0.05, 0.1, 0.2], 
+    'max_depth': [3, 5, 7],                  # maximum depth of each individual tree
+    'min_samples_split': [2, 5, 10],         # minimum samples necessary to divide a tree node
+    'min_samples_leaf': [1, 2, 4],          
+    'subsample': [0.8, 1.0]                  # fractions of samples per tree:
+                                             # e.g. setting subsample=0.8 means that each tree will use 80% of the data
+}
+
+gb_model = GradientBoostingClassifier(random_state=99)
+clf_gb = GridSearchCV(gb_model, param_grid=param_grid_gb, scoring='f1', return_train_score=True, cv=5)
+best_gb = clf_gb.fit(X_resampled_scaled, y_resampled)
+
+print("Best GB Hyperparameters: ", best_gb.best_params_)
+print("Best GB Score: ", best_gb.best_score_)
+"""
+#Best GB Hyperparameters:  {'learning_rate': 0.2, 'max_depth': 7, 'min_samples_leaf': 4, 'min_samples_split': 2, 'n_estimators': 200, 'subsample': 0.8}
+#Best GB Score:  0.9180232316504494
+
+final_gb = GradientBoostingClassifier(n_estimators=200,learning_rate=0.2,max_depth=7,min_samples_split=2,min_samples_leaf=4,subsample=0.8)
+
+# 5.2.4.1.2 Naive Bayes
+from sklearn.naive_bayes import GaussianNB
+param_grid_nb = {
+    'var_smoothing': [1e-9, 1e-8, 1e-7, 1e-6]  # Smoothing parameter for GaussianNB
+}
+
+nb_model = GaussianNB()
+clf_nb = GridSearchCV(nb_model, param_grid=param_grid_nb, scoring='f1', return_train_score=True, cv=5)
+best_nb = clf_nb.fit(X_resampled_scaled, y_resampled)
+
+print("Best NB Hyperparameters: ", best_nb.best_params_)
+print("Best NB Score: ", best_nb.best_score_)
+
+#Best NB Hyperparameters:  {'var_smoothing': 1e-06}
+#Best NB Score:  0.7642033255323517
+
+final_nb = GaussianNB(**best_nb.best_params_)
+
+# 5.2.4.2 Train and Evaluate Models
+
+# Keep+Try Dataset
+df_final_gb_nb_1 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best GB', 'Best NB'])
+show_results(df_final_gb_nb_1, X_resampled_scaled, y_resampled, final_gb, final_nb)
+print(df_final_gb_nb_1)
+
+# 0.928 -> GB
+# 0.758 -> NB
+# Best model on Keep+Try dataset is Gradient Boosting
+
+# Keep
+df_final_models_gb_nb_2 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best GB', 'Best NB'])
+show_results(df_final_models_gb_nb_2 , X_resampled_scaled2, y_resampled2, final_gb, final_nb)
+print(df_final_models_gb_nb_2)
+
+# 0.908 -> GB
+# 0.742 -> NB
+# Best model on Keep dataset is Gradient Boosting
+
+# 5.2.2.3 ROC Curve
+#Now let's try to choose based on a ROC Curve
+#keep+try data
+X_train, X_val, y_train, y_val = train_test_split(X_resampled_scaled, y_resampled,
+                                                  train_size = 0.8,
+                                                  random_state = 99,
+                                                  stratify = y_resampled)
+modelkeeptry_gb = final_gb.fit(X_train, y_train)
+modelkeeptry_nb = final_nb.fit(X_train, y_train)
+prob_modelkeeptrygb =  modelkeeptry_gb.predict_proba(X_val)
+prob_modelkeeptrynb =  modelkeeptry_nb.predict_proba(X_val)
+fpr_modelkeeptrygb, tpr_modelkeeptrygb, thresholds_modelkeeptrygb = roc_curve(y_val, prob_modelkeeptrygb[:,1])
+fpr_modelkeeptrynb, tpr_modelkeeptrynb, thresholds_modelkeeptrynb = roc_curve(y_val, prob_modelkeeptrynb[:,1])
+plt.plot(fpr_modelkeeptrygb, tpr_modelkeeptrygb,label="ROC Curve GB")
+plt.plot(fpr_modelkeeptrynb, tpr_modelkeeptrynb, label="ROC Curve NB")
+plt.xlabel('FPR')
+plt.ylabel('TPR')
+plt.legend()
+plt.show()
+roc_auc_modelkeeptrygb = roc_auc_score(y_val, prob_modelkeeptrygb[:, 1])
+roc_auc_modelkeeptrynb = roc_auc_score(y_val, prob_modelkeeptrynb[:, 1])
+print(roc_auc_modelkeeptrygb)
+print(roc_auc_modelkeeptrynb)
+
+#0.9752414046576897 -> Gradient Boosting
+#0.8551572053860803 -> Naive Bayes
+
+#keep data
+X_train2, X_val2, y_train2, y_val2 = train_test_split(X_resampled_scaled2, y_resampled2,
+                                                  train_size = 0.8,
+                                                  random_state = 99,
+                                                  stratify = y_resampled2)
+modelkeep_gb = final_gb.fit(X_train2, y_train2)
+modelkeep_nb = final_nb.fit(X_train2, y_train2)
+prob_modelkeepgb =  modelkeep_gb.predict_proba(X_val2)
+prob_modelkeepnb =  modelkeep_nb.predict_proba(X_val2)
+fpr_modelkeepgb, tpr_modelkeepgb, thresholds_modelkeepgb = roc_curve(y_val2, prob_modelkeepgb[:,1])
+fpr_modelkeepnb, tpr_modelkeepnb, thresholds_modelkeepnb = roc_curve(y_val2, prob_modelkeepnb[:,1])
+plt.plot(fpr_modelkeepgb, tpr_modelkeepgb,label="ROC Curve GB")
+plt.plot(fpr_modelkeepnb, tpr_modelkeepnb, label="ROC Curve NB")
+plt.xlabel('FPR')
+plt.ylabel('TPR')
+plt.legend()
+plt.show()
+roc_auc_modelkeepgb = roc_auc_score(y_val2, prob_modelkeepgb[:, 1])
+roc_auc_modelkeepnb = roc_auc_score(y_val2, prob_modelkeepnb[:, 1])
+print(roc_auc_modelkeepgb)
+print(roc_auc_modelkeepnb)
+
+#0.9599385211667613 -> Gradient Boosting
+#0.8495105082027465 -> Naive Bayes
+
+#Best model is Gradient Boosting on keep+try features 
+
+## 5.2.2.4 Adjusting threshold
+
+final_modelbt = modelkeeptry_gb.fit(X_resampled_scaled, y_resampled)
+predict_proba = final_modelbt.predict_proba(X_val)
+precision, recall, thresholds = precision_recall_curve(y_val, predict_proba[:,1])
+
+# Compute F1 score, avoid division by zero
+fscore = np.where((precision + recall) > 0, (2 * precision * recall) / (precision + recall), 0)
+# locate the index of the largest f score
+ix = np.argmax(fscore)
+print('Best Threshold=%f, F-Score=%.3f' % (thresholds[ix], fscore[ix]))
+
+plt.plot(recall, precision, marker='.', label='GB')
+plt.scatter(recall[ix], precision[ix], marker='o', color='black', label='Best')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.legend()
+plt.show()
+
+#Best Threshold=0.999947, F-Score=1.000

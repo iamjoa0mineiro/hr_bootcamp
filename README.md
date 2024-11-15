@@ -77,10 +77,10 @@ MinMax Scaler: Tem que se fazer só às numerical variables, não se pode fazer 
     - Logistic Regression - Joao G. - Feito
     - Decision Trees - Joao G. - Feito
     - Random Forests - Joao M. - Feito
-    - Gradient Boosting - Bruno T.
+    - Gradient Boosting - Bruno T. - Feito
     - Support Vector Machine (SVM) - Joao M. - Feito
     - Neural Networks - Raysa
-    - Naive Bayes - Bruno T.
+    - Naive Bayes - Bruno T. - Feito
 
 
 Modeling the Data: NEXT
