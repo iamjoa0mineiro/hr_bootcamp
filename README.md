@@ -79,10 +79,19 @@ MinMax Scaler: Tem que se fazer só às numerical variables, não se pode fazer 
     - Random Forests - Joao M. - Feito
     - Gradient Boosting - Bruno T. - Feito
     - Support Vector Machine (SVM) - Joao M. - Feito
-    - Neural Networks - Raysa
+    - Neural Networks - Raysa - Feito
     - Naive Bayes - Bruno T. - Feito
 
+Organizar o código dos modelosn a seguinte ordem, só com o dataset de Keep+Try: 
 
-Modeling the Data: NEXT
+- GridSearch com todos
+- Comparação Train/Validation com todos
+- ROC Curve com todos
+- Ajustar Threshold do modelo que ganhou no ROC Curve
 
-Next step --> Modeling with both X_train1 and X_train2, and decide with which one to proceed with --> according to the final decision, drop the columns on test set as well.
+Modelo escolhido ver resultados com test set:
+- Accuracy 
+- Balanced Accuracy
+- F1 Score
+- Precision
+- Recall 

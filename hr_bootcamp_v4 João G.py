@@ -759,7 +759,7 @@ X_resampled_scaled = pd.concat([X_numerical_scaled_df, X_binary], axis=1)
 #-------------------------------------------
 # 5.1.2 Keep ONLY
 #-------------------------------------------
-
+"""
 categorical_columns2 = ['BusinessTravel', 'JobRole', 'MaritalStatus', 'OverTime']
 X_categorical_features2 = X_train_keep[categorical_columns2]
 encoder2 = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_features2)
@@ -783,7 +783,7 @@ X_numerical_scaled2 = scaler.fit_transform(X_numerical2)
 X_numerical_scaled_df2 = pd.DataFrame(X_numerical_scaled2, columns=numerical_features2)
 X_binary2 = X_resampled2.drop(columns=numerical_features2)
 X_resampled_scaled2 = pd.concat([X_numerical_scaled_df2, X_binary2], axis=1)
-
+"""
 #-------------------------------------------
 #-------------------------------------------
 # 5.2 Model Selection
@@ -834,7 +834,7 @@ def show_results(df, xdata,ydata, *args):
 #-------------------------------------------
 # 5.2.2 Logistic Regression + Decision Trees
 #-------------------------------------------
-
+"""
 # 5.2.2.1 1st Try
 
 model_DT = DecisionTreeClassifier(max_depth = 3, random_state = 99)
@@ -849,7 +849,7 @@ df_keep = pd.DataFrame(columns = ['Train','Validation'], index = ['DT','LogR'])
 show_results(df_keep, X_resampled_scaled2, y_resampled2, model_LogR, model_DT)
 
 #Best model based on f1score is Decision Tree. Based on overfitting, they're tied.
-
+"""
 # 5.2.2.2 Grid Search
 
 # 5.2.2.2.1 Logistic Regression
@@ -905,7 +905,7 @@ print("Best Score: ", best_clf4.best_score_)
 #Best Hyperparameters:  {'criterion': 'gini', 'max_depth': 54}
 #Best Score:  0.8379540563975196
 '''
-# 5.2.2.2.3 Grid Search Results
+# 5.2.2.2.3 Grid Search Results 
 #Based on the previous results, both models were ran with keep features and keep+try features
 #Creating models
 finalkeeptry_dt = DecisionTreeClassifier(criterion = 'log_loss', max_depth = 102)
@@ -915,10 +915,10 @@ finalkeep_logr = LogisticRegression(C= 0.23357214690901212, max_iter= 5000, pena
 #Running models
 df_final_models1 = pd.DataFrame(columns = ['Train','Validation'], index = ['Best LogR','Best DT'])
 show_results(df_final_models1, X_resampled_scaled, y_resampled, finalkeeptry_logr, finalkeeptry_dt)
-
+"""
 df_final_models2 = pd.DataFrame(columns = ['Train','Validation'], index = ['Best LogR','Best DT'])
 show_results(df_final_models2, X_resampled_scaled2, y_resampled2, finalkeep_logr, finalkeep_dt)
-
+"""
 #LogR on the keep+try dataset had the best validation f1 score with the least amount of overfitting. 
 
 # 5.2.2.3 ROC Curve
@@ -948,7 +948,7 @@ print(roc_auc_modelkeeptryLogR)
 #0.8323699421965319 - DT
 #0.9193758561929901 - LogR
 
-
+"""
 #keep data
 X_train2, X_val2, y_train2, y_val2 = train_test_split(X_resampled_scaled2, y_resampled2,
                                                   train_size = 0.8,
@@ -973,7 +973,7 @@ print(roc_auc_modelkeepLogR)
 
 #0.8208092485549133 -> DT
 #0.8842594139463397 -> LogR
-
+"""
 #Best model is LogR on keep+try features 
 
 #Adjusting threshold
