@@ -1333,7 +1333,7 @@ finalkeep_nn = MLPClassifier(
     hidden_layer_sizes=(100,),
     learning_rate='constant',
     learning_rate_init=0.001,
-    max_iter=5000,
+    max_iter=2000,
     solver='adam',
     random_state=99
 )
@@ -1361,7 +1361,7 @@ print(df_final_nn_models2)
 
 # Results for Neural Network on keep-only dataset:
 #                 Train    Validation
-# Best NN  0.937+/-0.01  0.858+/-0.01 -> difference of 0.079
+# Best NN  0.936+/-0.01  0.858+/-0.01 -> difference of 0.078
 
 
 # Step 3
