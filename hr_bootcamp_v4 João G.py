@@ -1271,3 +1271,173 @@ plt.legend()
 plt.show()
 
 #Best Threshold=0.999947, F-Score=1.000
+
+# -------------------------------------------
+# 5.2.5 Neural Network
+# -------------------------------------------
+
+# Step 1 
+# -------------------------------------------
+
+# Define the Parameter Grid for Neural Network
+'''
+param_grid_nn = {
+    'hidden_layer_sizes': [(50,), (100,), (100, 50), (50, 50)],
+    'activation': ['tanh', 'relu'],
+    'solver': ['adam'],
+    'alpha': [0.0001, 0.001, 0.01],
+    'learning_rate': ['constant', 'adaptive'],
+    'learning_rate_init': [0.001, 0.0005, 0.0001],   
+    'max_iter': [2000]                                
+}
+
+# Create the MLPClassifier
+nn_model = MLPClassifier(random_state=99)
+
+# Apply GridSearchCV to tune hyperparameters
+clf_nn = GridSearchCV(nn_model, param_grid=param_grid_nn, scoring='f1', return_train_score=True, cv=5)
+best_nn = clf_nn.fit(X_resampled_scaled, y_resampled)
+
+# Display the best hyperparameters and the best score found during Grid Search
+print("Best NN Hyperparameters: ", best_nn.best_params_)
+print("Best NN Score: ", best_nn.best_score_)
+'''
+
+# Best NN Hyperparameters:  {'activation': 'tanh', 'alpha': 0.01, 'hidden_layer_sizes': (100,), 'learning_rate': 'constant', 'max_iter': 2000, 'solver': 'adam'}
+# Best NN Score:  0.8691665447550003
+
+# Best NN Hyperparameters:  {'activation': 'tanh', 'alpha': 0.01, 'hidden_layer_sizes': (100,), 'learning_rate': 'constant', 'learning_rate_init': 0.001, 'max_iter': 5000, 'solver': 'adam'}
+# Best NN Score:  0.8691665447550003
+
+# Step 2
+# -------------------------------------------
+
+# Creating models with the best hyperparameters from the Grid Search results
+
+# For keep+try dataset
+finalkeeptry_nn = MLPClassifier(
+    activation='tanh',
+    alpha=0.01,
+    hidden_layer_sizes=(100,),
+    learning_rate='constant',
+    max_iter=2000,
+    solver='adam',
+    random_state=99
+)
+
+# For keep-only dataset
+# Assuming the best hyperparameters obtained for the keep-only dataset were similar:
+finalkeep_nn = MLPClassifier(
+    activation='tanh',
+    alpha=0.01,
+    hidden_layer_sizes=(100,),
+    learning_rate='constant',
+    learning_rate_init=0.001,
+    max_iter=5000,
+    solver='adam',
+    random_state=99
+)
+
+# Running models using the `show_results` function
+# Create a dataframe to store the results of the keep+try dataset
+df_final_nn_models1 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best NN'])
+
+# Evaluate on keep+try dataset
+show_results(df_final_nn_models1, X_resampled_scaled, y_resampled, finalkeeptry_nn)
+print("Results for Neural Network on keep+try dataset:")
+print(df_final_nn_models1)
+
+# Create a dataframe to store the results of the keep-only dataset
+df_final_nn_models2 = pd.DataFrame(columns=['Train', 'Validation'], index=['Best NN'])
+
+# Evaluate on keep-only dataset
+show_results(df_final_nn_models2, X_resampled_scaled2, y_resampled2, finalkeep_nn)
+print("\nResults for Neural Network on keep-only dataset:")
+print(df_final_nn_models2)
+
+# Results for Neural Network on keep+try dataset:
+#                Train    Validation
+# Best NN  0.995+/-0.0  0.887+/-0.01 -> difference of 0.108
+
+# Results for Neural Network on keep-only dataset:
+#                 Train    Validation
+# Best NN  0.937+/-0.01  0.858+/-0.01 -> difference of 0.079
+
+
+# Step 3
+# -------------------------------------------
+
+# 5.2.5.3 ROC Curve for Neural Networks
+
+# Split the data into training and validation sets for the keep+try dataset
+X_train, X_val, y_train, y_val = train_test_split(
+    X_resampled_scaled,
+    y_resampled,
+    train_size=0.8,
+    random_state=99,
+    stratify=y_resampled
+)
+
+# Train the neural network model (keep+try dataset)
+modelkeeptry_nn = finalkeeptry_nn.fit(X_train, y_train)
+
+# Obtain the probability predictions for the validation set
+prob_modelkeeptry_nn = modelkeeptry_nn.predict_proba(X_val)
+
+# Compute the ROC Curve
+fpr_modelkeeptry_nn, tpr_modelkeeptry_nn, thresholds_modelkeeptry_nn = roc_curve(y_val, prob_modelkeeptry_nn[:, 1])
+
+# Plot the ROC Curve for the Neural Network model (keep+try dataset)
+plt.plot(fpr_modelkeeptry_nn, tpr_modelkeeptry_nn, label="ROC Curve NN (keep+try dataset)")
+plt.xlabel('False Positive Rate (FPR)')
+plt.ylabel('True Positive Rate (TPR)')
+plt.legend()
+plt.title('ROC Curve for Neural Network (keep+try dataset)')
+plt.show()
+
+# Calculate the ROC AUC Score
+roc_auc_modelkeeptry_nn = roc_auc_score(y_val, prob_modelkeeptry_nn[:, 1])
+print("ROC AUC Score for NN (keep+try dataset):", roc_auc_modelkeeptry_nn)
+
+# -----------------------------------------
+# Repeat for the keep-only dataset
+# -----------------------------------------
+
+# Split the data into training and validation sets for the keep-only dataset
+X_train2, X_val2, y_train2, y_val2 = train_test_split(
+    X_resampled_scaled2,
+    y_resampled2,
+    train_size=0.8,
+    random_state=99,
+    stratify=y_resampled2
+)
+
+# Train the neural network model (keep-only dataset)
+modelkeep_nn = finalkeep_nn.fit(X_train2, y_train2)
+
+# Obtain the probability predictions for the validation set
+prob_modelkeep_nn = modelkeep_nn.predict_proba(X_val2)
+
+# Compute the ROC Curve
+fpr_modelkeep_nn, tpr_modelkeep_nn, thresholds_modelkeep_nn = roc_curve(y_val2, prob_modelkeep_nn[:, 1])
+
+# Plot the ROC Curve for the Neural Network model (keep-only dataset)
+plt.plot(fpr_modelkeep_nn, tpr_modelkeep_nn, label="ROC Curve NN (keep-only dataset)")
+plt.xlabel('False Positive Rate (FPR)')
+plt.ylabel('True Positive Rate (TPR)')
+plt.legend()
+plt.title('ROC Curve for Neural Network (keep-only dataset)')
+plt.show()
+
+# Calculate the ROC AUC Score
+roc_auc_modelkeep_nn = roc_auc_score(y_val2, prob_modelkeep_nn[:, 1])
+print("ROC AUC Score for NN (keep-only dataset):", roc_auc_modelkeep_nn)
+
+# Results:
+# ROC AUC Score for NN (keep+try dataset): 0.945838484413111
+# ROC AUC Score for NN (keep-only dataset): 0.9106218049383541
+
+# Insights:
+# 1. The "keep+try" dataset produced a better model in comparison to the "keep-only" dataset.
+# 2. The ROC curve for the "keep+try" dataset is closer to the top left corner, which indicates better overall performance,
+#    with a higher true positive rate (TPR) for a given false positive rate (FPR).
