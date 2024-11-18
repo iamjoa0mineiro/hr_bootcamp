@@ -920,6 +920,10 @@ print("Best Neural Network Score: ", best_nn.best_score_)
 # Best Naive Bayes Hyperparameters:  {'var_smoothing': 1e-06}
 # Best Naive Bayes Score:  0.7642033255323517
 
+# Best Neural Network Hyperparameters:  {'activation': 'tanh', 'alpha': 0.01, 'hidden_layer_sizes': (100,), 'learning_rate': 'constant', 'learning_rate_init': 0.001, 'max_iter': 2000, 'solver': 'adam'}
+# Best Neural Network Score:  0.8691665447550003
+
+
 # -------------------------------------------
 # 5.2.3 Final Models
 # -------------------------------------------
@@ -946,6 +950,16 @@ df_all_models = pd.DataFrame(columns=['Train', 'Validation'], index=final_models
 show_results(df_all_models, X_resampled_scaled, y_resampled, *final_models.values())
 print("Train/Validation scores for all models on Keep+Try dataset:")
 print(df_all_models)
+
+# Train/Validation scores for all models on Keep+Try dataset:
+#              Train    Validation
+# LogR  0.859+/-0.01  0.849+/-0.02
+# DT       1.0+/-0.0  0.828+/-0.02
+# SVM    0.921+/-0.0  0.883+/-0.01
+# RF       1.0+/-0.0   0.91+/-0.01
+# GB       1.0+/-0.0   0.93+/-0.01
+# NB    0.765+/-0.01  0.758+/-0.02
+# NN     0.995+/-0.0  0.887+/-0.01
 
 # -------------------------------------------
 # 5.2.4 ROC Curve Analysis for All Models (Keep+Try Dataset)
@@ -1046,9 +1060,9 @@ y = hr['Attrition']
 # Split into Train and Test Sets (70% training, 30% testing)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
 
-#Applying the same transformations as previously on train and test set: SMOTE NC and MinMaxScaler
+# Applying the same transformations as previously on train and test set: SMOTE NC and MinMaxScaler
 
-#train set
+# train set
 
 X_categorical_featuresf = X_train[categorical_columns]
 encoderf = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featuresf)
@@ -1060,11 +1074,11 @@ X_no_categoricalf = X_train.drop(columns=categorical_columns)
 X_train_final_keepf = pd.concat([X_no_categoricalf, X_train_encoded_catf], axis=1)
 categorical_column_indices=[14,15,16,17,18,19,20,21,22,23,24,25,26]
 
-#SMOTE NC to solve class imbalance 
+# SMOTE NC to solve class imbalance 
 smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
 X_resampledf, y_resampledf = smote_nc.fit_resample(X_train_final_keepf, y_train)
 
-#MinMaxScaler 
+# MinMaxScaler 
 X_numericalf = X_resampledf[numerical_features]
 scaler = MinMaxScaler()
 X_numerical_scaledf = scaler.fit_transform(X_numericalf)
