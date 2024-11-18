@@ -1000,13 +1000,13 @@ X_train, X_val, y_train, y_val = train_test_split(
 )
 
 # Train the Gradient Boosting Classifier on the training set
-final_gb_model = final_models['GB'].fit(X_train, y_train)
+final_logr_model = final_models['LogR'].fit(X_train, y_train)
 
 # Obtain the probability predictions for the validation set
-predict_proba_gb = final_gb_model.predict_proba(X_val)
+predict_proba_logr = final_logr_model.predict_proba(X_val)
 
 # Calculate precision, recall, and thresholds using precision_recall_curve
-precision, recall, thresholds = precision_recall_curve(y_val, predict_proba_gb[:, 1])
+precision, recall, thresholds = precision_recall_curve(y_val, predict_proba_logr[:, 1])
 
 # Compute F1 score for each threshold and find the index of the maximum F1 score
 fscore = np.where((precision + recall) > 0, (2 * precision * recall) / (precision + recall), 0)
@@ -1021,12 +1021,126 @@ plt.scatter(recall[ix], precision[ix], marker='o', color='black', label='Best Th
 plt.xlabel('Recall')
 plt.ylabel('Precision')
 plt.legend()
-plt.title('Precision-Recall Curve for Gradient Boosting (Keep+Try Dataset)')
+plt.title('Precision-Recall Curve for Logistic Regression (Keep+Try Dataset)')
 plt.show()
 
 # Display best threshold and F-Score for Gradient Boosting Classifier
 print(f"Best Threshold: {thresholds[ix]:.6f}")
 print(f"F-Score at Best Threshold: {fscore[ix]:.3f}")
 
-# Best Threshold: 0.693672
-# F-Score at Best Threshold: 0.931
+# Best Threshold: 0.315325
+# F-Score at Best Threshold: 0.850
+
+#==========================================
+# SECTION 6: Deploy
+#==========================================
+
+# -------------------------------------------
+# 6.1 Creating a new train and test set with only the keep+try features
+# -------------------------------------------
+
+# Define Features (X) and Target (y)
+X = hr[variables_to_try_and_keep]
+y = hr['Attrition']
+
+# Split into Train and Test Sets (70% training, 30% testing)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+
+#Applying the same transformations as previously on train and test set: SMOTE NC and MinMaxScaler
+
+#train set
+
+X_categorical_featuresf = X_train[categorical_columns]
+encoderf = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featuresf)
+X_train_encoded_catf = pd.DataFrame(encoderf.transform(X_categorical_featuresf),
+                                   columns=encoderf.get_feature_names_out(categorical_columns),
+                                   index=X_categorical_featuresf.index)
+X_train_encoded_catf = X_train_encoded_catf.astype(int)
+X_no_categoricalf = X_train.drop(columns=categorical_columns)
+X_train_final_keepf = pd.concat([X_no_categoricalf, X_train_encoded_catf], axis=1)
+categorical_column_indices=[14,15,16,17,18,19,20,21,22,23,24,25,26]
+
+#SMOTE NC to solve class imbalance 
+smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
+X_resampledf, y_resampledf = smote_nc.fit_resample(X_train_final_keepf, y_train)
+
+#MinMaxScaler 
+X_numericalf = X_resampledf[numerical_features]
+scaler = MinMaxScaler()
+X_numerical_scaledf = scaler.fit_transform(X_numericalf)
+X_numerical_scaled_dff = pd.DataFrame(X_numerical_scaledf, columns=numerical_features)
+X_binaryf = X_resampledf.drop(columns=numerical_features)
+X_resampled_scaledf = pd.concat([X_numerical_scaled_dff, X_binaryf], axis=1)
+
+#test set
+
+X_categorical_featurest = X_test[categorical_columns]
+encodert = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featurest)
+X_test_encoded_cat = pd.DataFrame(encodert.transform(X_categorical_featurest),
+                                   columns=encodert.get_feature_names_out(categorical_columns),
+                                   index=X_categorical_featurest.index)
+X_test_encoded_cat = X_test_encoded_cat.astype(int)
+X_no_categoricalt = X_test.drop(columns=categorical_columns)
+X_test_final_keep = pd.concat([X_no_categoricalt, X_test_encoded_cat], axis=1)
+categorical_column_indices=[14,15,16,17,18,19,20,21,22,23,24,25,26]
+
+#SMOTE NC to solve class imbalance 
+smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
+X_resampledt, y_resampledt = smote_nc.fit_resample(X_test_final_keep, y_test)
+
+#MinMaxScaler 
+X_numericalt = X_resampledt[numerical_features]
+scaler = MinMaxScaler()
+X_numerical_scaledt = scaler.fit_transform(X_numericalt)
+X_numerical_scaled_dft = pd.DataFrame(X_numerical_scaledt, columns=numerical_features)
+X_binaryt = X_resampledt.drop(columns=numerical_features)
+X_resampled_scaledt = pd.concat([X_numerical_scaled_dft, X_binaryt], axis=1)
+
+
+
+# -------------------------------------------
+# 6.2 Creating the final model and a column with the final prediction
+# -------------------------------------------
+
+final_model = final_logr_model.fit(X_resampled_scaledf, y_resampledf)
+
+predict_proba_test = final_model.predict_proba(X_resampled_scaledt)
+final_pred = []
+
+
+# -------------------------------------------
+# 6.3 Measuring different metrics based on the threshold given on 5.2.5
+# -------------------------------------------
+
+for value in predict_proba_test[:,1]:
+    if (value>=0.315325):
+        final_pred.append(1)
+    else:
+        final_pred.append(0)
+
+metrics = {
+    "F1 Score": f1_score(y_true=y_resampledt, y_pred=final_pred),
+    "Accuracy Score": accuracy_score(y_true=y_resampledt, y_pred=final_pred),
+    "Precision Score": precision_score(y_true=y_resampledt, y_pred=final_pred),
+    "Recall Score": recall_score(y_true=y_resampledt, y_pred=final_pred),
+}
+metrics_table = pd.DataFrame(list(metrics.items()), columns=["Metric", "Value"])
+print(metrics_table)
+
+
+
+#RESULTADOS LOGR 
+
+                    #Metric    Value
+#0         F1 Score 0.816754
+#1   Accuracy Score 0.810811
+#2  Precision Score 0.791878
+#3     Recall Score 0.843243
+
+#RESULTADOS SVM
+
+#                    Metric    Value
+#0                 F1 Score 0.786026
+#1           Accuracy Score 0.801351
+#2          Precision Score 0.851735
+#3             Recall Score 0.729730

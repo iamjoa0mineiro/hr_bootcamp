@@ -84,14 +84,16 @@ MinMax Scaler: Tem que se fazer só às numerical variables, não se pode fazer 
 
 Organizar o código dos modelosn a seguinte ordem, só com o dataset de Keep+Try: 
 
-- GridSearch com todos
-- Comparação Train/Validation com todos
-- ROC Curve com todos
-- Ajustar Threshold do modelo que ganhou no ROC Curve
+- GridSearch com todos -> FEITO
+- Comparação Train/Validation com todos -> FEITO
+- ROC Curve com todos -> FEITO
+- Ajustar Threshold do modelo que ganhou no ROC Curve -> FEITO
 
-Modelo escolhido ver resultados com test set:
+Modelo escolhido ver resultados com test set: -> FEITO
 - Accuracy 
 - Balanced Accuracy
 - F1 Score
 - Precision
 - Recall 
+
+18/11/2024: Test feito, é necessário decidir entre o modelo LogR e SVM. Ambos têm accuracies parecidas, a decisão acaba por ser se preferimos Recall ou Precision mais alta. 
