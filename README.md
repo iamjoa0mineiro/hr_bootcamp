@@ -97,3 +97,10 @@ Modelo escolhido ver resultados com test set: -> FEITO
 - Recall 
 
 18/11/2024: Test feito, é necessário decidir entre o modelo LogR e SVM. Ambos têm accuracies parecidas, a decisão acaba por ser se preferimos Recall ou Precision mais alta. 
+
+19/11/2024 (Bruno)
+- Melhorei os modelos de NN, GB and RF. Infelizmente não consegui obter resultados melhores que o LogR.
+- Confusion Matrix
+- SHAP para a apresentação
+
+Next Steps: Desenvolver apresentação usando SHAP. 

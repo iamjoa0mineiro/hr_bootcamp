@@ -23,6 +23,7 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from collections import Counter
 from itertools import chain, combinations
+import shap
 
 # =================================================
 # SECTION 2: Data Collection and Initial Processing
@@ -944,7 +945,6 @@ final_models = {
                         learning_rate_init=0.001, max_iter=2000, solver='adam', early_stopping=True, 
                         validation_fraction=0.15, random_state=99)
 }
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=99)
                       
 # Show Train/Validation scores for all models using the best hyperparameters
 df_all_models = pd.DataFrame(columns=['Train', 'Validation'], index=final_models.keys())
@@ -1142,8 +1142,6 @@ metrics = {
 metrics_table = pd.DataFrame(list(metrics.items()), columns=["Metric", "Value"])
 print(metrics_table)
 
-
-
 #RESULTADOS LOGR 
                     #Metric    Value
 #0         F1 Score 0.816754
@@ -1177,3 +1175,49 @@ print(metrics_table)
 #1   Accuracy Score 0.810811
 #2  Precision Score 0.805851
 #3     Recall Score 0.818919
+
+# -------------------------------------------
+# 6.4 Confusion Matrix
+# -------------------------------------------
+
+# Generate the confusion matrix
+cm = confusion_matrix(y_true=y_resampledt, y_pred=final_pred)
+
+# Display the confusion matrix
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["No Attrition", "Attrition"])
+disp.plot(cmap="Blues")
+disp.ax_.set_title("Confusion Matrix for Final Model")
+disp.ax_.set_xlabel("Predicted Labels")
+disp.ax_.set_ylabel("True Labels")
+plt.show()
+
+# -------------------------------------------
+# 6.4 Applying SHAP to LogR Model
+# -------------------------------------------
+
+# 6.4.1 Applying SHAP
+# Apply SHAP
+explainer = shap.Explainer(final_model, X_resampled_scaledf)
+shap_values = explainer(X_resampled_scaledt)
+
+# Visualize results
+shap.plots.violin(shap_values, max_display=10)
+
+# 6.4.2 INSIGHTS
+
+# 6.4.2.1 Why is it so important to tackle overtime? 
+# See how job satisfaction is amplified by wether employees work overtime 
+shap.dependence_plot("JobSatisfaction", shap_values.values, X_resampled_scaledt)
+# See how people who work overtime will have less time to train
+shap.dependence_plot("TrainingTimesLastYear", shap_values.values, X_resampled_scaledt)
+
+# 6.4.2.2 Other Insights
+shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_scaledt)
+
+# Most Important Features :
+    # - People who are a Research Scientist tend to have a much lesser chance to leave the company
+    # - People who work overtime have a much higher probability in leaving the company
+    # - Higher stock option levels (red dots) are associated with a decreased likelihood of attrition.
+    # - Lower job satisfaction/environemnt satisfaction/job involvement (blue dots) increases 
+    # attrition, while higher values (red dots) reduces it.
+    # - MANY MORE CONCLUSIONS TO BE TAKEN
