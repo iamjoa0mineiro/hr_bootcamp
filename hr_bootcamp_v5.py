@@ -934,17 +934,18 @@ final_models = {
     'DT': DecisionTreeClassifier(criterion='log_loss', max_depth=102, random_state=99),
     'SVM': SVC(C=1, gamma='scale', kernel='rbf', probability=True, random_state=99),
     'RF': RandomForestClassifier(
-        criterion='entropy', max_depth=None, min_samples_leaf=1, min_samples_split=2, n_estimators=200, random_state=99
+        criterion='gini', max_depth=6, min_samples_leaf=2, min_samples_split=5, n_estimators=100, random_state=99
     ),
     'GB': GradientBoostingClassifier(
-        learning_rate=0.2, max_depth=7, min_samples_leaf=4, min_samples_split=2, n_estimators=200, subsample=0.8, random_state=99
+        learning_rate=0.05, max_depth=3, min_samples_leaf=7, min_samples_split=5, n_estimators=100, subsample=0.8, random_state=99
     ),
     'NB': GaussianNB(var_smoothing=1e-06),
-    'NN': MLPClassifier(
-        activation='tanh', alpha=0.01, hidden_layer_sizes=(100,), learning_rate='constant', max_iter=2000, solver='adam', random_state=99
-    )
+    'NN': MLPClassifier(activation='relu', alpha=0.001, hidden_layer_sizes=(128, 64), learning_rate='adaptive', 
+                        learning_rate_init=0.001, max_iter=2000, solver='adam', early_stopping=True, 
+                        validation_fraction=0.15, random_state=99)
 }
-
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=99)
+                      
 # Show Train/Validation scores for all models using the best hyperparameters
 df_all_models = pd.DataFrame(columns=['Train', 'Validation'], index=final_models.keys())
 show_results(df_all_models, X_resampled_scaled, y_resampled, *final_models.values())
@@ -1144,7 +1145,6 @@ print(metrics_table)
 
 
 #RESULTADOS LOGR 
-
                     #Metric    Value
 #0         F1 Score 0.816754
 #1   Accuracy Score 0.810811
@@ -1152,9 +1152,28 @@ print(metrics_table)
 #3     Recall Score 0.843243
 
 #RESULTADOS SVM
-
 #                    Metric    Value
 #0                 F1 Score 0.786026
 #1           Accuracy Score 0.801351
 #2          Precision Score 0.851735
 #3             Recall Score 0.729730
+
+#RESULTADOS GB
+#            Metric    Value
+#0         F1 Score 0.801027
+#1   Accuracy Score 0.790541
+#2  Precision Score 0.762836
+#3     Recall Score 0.843243
+
+#RESULTADOS RF
+#            Metric    Value
+#0         F1 Score 0.778846
+#1   Accuracy Score 0.751351
+#2  Precision Score 0.701299
+#3     Recall Score 0.875676
+
+#RESULTADOS NN
+#0         F1 Score 0.812332
+#1   Accuracy Score 0.810811
+#2  Precision Score 0.805851
+#3     Recall Score 0.818919
