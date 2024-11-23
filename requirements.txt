@@ -1,8 +1,8 @@
-pandas
-numpy
-matplotlib
-seaborn
-scikit-learn
-imbalanced-learn
-shap
-squarify
+pandas==2.2.3
+numpy==2.1.2
+matplotlib==3.9.2
+seaborn==0.13.2
+scikit-learn==1.5.2
+imbalanced-learn==0.12.4
+shap==0.41.0
+squarify==0.4.4
