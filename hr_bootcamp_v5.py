@@ -17,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.feature_selection import RFE, SelectKBest, chi2, VarianceThreshold, mutual_info_classif
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score, precision_recall_curve
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score, precision_recall_curve, ConfusionMatrixDisplay
 from imblearn.over_sampling import SMOTE, SMOTENC
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
@@ -1221,3 +1221,9 @@ shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_scaledt
     # - Lower job satisfaction/environemnt satisfaction/job involvement (blue dots) increases 
     # attrition, while higher values (red dots) reduces it.
     # - MANY MORE CONCLUSIONS TO BE TAKEN
+
+#Suggestions
+#Environment Satisfaction relacionado com Distance from Home; JobInvolvement com JobSatisfaction; JobSatisfaction com Overtime
+#Estratégia para reduzir Distance From Home -> Teletrabalho, o que melhora o EnvironmentSatisfaction ; Grupo de boleias ou empresa oferecer transporte
+#Estratégia para reduzir OverTime que aumenta JobSatisfaction que aumenta JobInvolvement -> Introduzir metodologia Agile de modo a que cada tarefa esteja partida em tarefas mais pequenas e melhora a organização dentro de equipas
+#Estratégia para aumentar StockOptionLevel e JobInvolvement -> Prémio por performance elevada ser ações da empresa.

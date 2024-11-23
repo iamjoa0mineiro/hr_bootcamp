@@ -104,4 +104,11 @@ Modelo escolhido ver resultados com test set: -> FEITO
 - Confusion Matrix
 - SHAP para a apresentação
 
-Next Steps: Desenvolver apresentação usando SHAP. 
+Next Steps: Desenvolver apresentação usando SHAP.
+
+Next Steps 23/11/2024
+
+- João Mineiro -> Organizar repositório, criar virtual environment e adaptar o código 
+- Bruno -> Acabar gráficos individuais do SHAP
+- Raysa -> Organizar Requirements 
+- João Grade -> Começar estrutura da apresentação, fazer slides de back-up (passos técnicos)
