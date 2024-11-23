@@ -5,6 +5,7 @@ HR Bootcamp 2024
 pip install matplotlib seaborn squarify scikit-learn scipy
 pip install polars
 pip install scipy polars
+pip install shap
 
 # Versões:
 matplotlib 3.9.2
