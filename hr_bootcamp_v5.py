@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import squarify
 import numpy as np
+from math import exp
 from scipy import stats
 from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import RobustScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
@@ -1195,24 +1196,40 @@ plt.show()
 # 6.4 Applying SHAP to LogR Model
 # -------------------------------------------
 
-# 6.4.1 Applying SHAP
-# Apply SHAP
-explainer = shap.Explainer(final_model, X_resampled_scaledf)
+# 6.4.1 Removing MinMaxScaler for better readibility from X_Test
+
+# Step 1: Inverse MinMaxScaler
+X_numerical_original = scaler.inverse_transform(X_resampled_scaledt[numerical_features])
+X_numerical_original_t = pd.DataFrame(X_numerical_original, columns=numerical_features)
+
+# Step 2: Extract encoded categorical features
+X_encoded_categorical_t = X_resampled_scaledt.drop(columns=numerical_features)
+
+# Step 3: Combine both into a dataframe. Now, we have a df resampled, but not scaled
+X_resampled_t = pd.concat([X_numerical_original_t, X_encoded_categorical_t], axis=1)
+
+# 6.4.2 Applying SHAP
+
+# Apply SHAP using test scaled data (data needs to be scaled for this)
+explainer = shap.Explainer(final_model, X_resampled_scaledt,model_output="probability")
 shap_values = explainer(X_resampled_scaledt)
 
 # Visualize results
 shap.plots.violin(shap_values, max_display=10)
 
-# 6.4.2 INSIGHTS
+# 6.4.3 INSIGHTS
 
-# 6.4.2.1 Why is it so important to tackle overtime? 
+# 6.4.3.1 Why is it so important to tackle overtime? 
+
+# NOTE: Dependence plots will use the values from not scaled data, to check the real values
 # See how job satisfaction is amplified by wether employees work overtime 
-shap.dependence_plot("JobSatisfaction", shap_values.values, X_resampled_scaledt)
-# See how people who work overtime will have less time to train
-shap.dependence_plot("TrainingTimesLastYear", shap_values.values, X_resampled_scaledt)
+shap.dependence_plot("JobSatisfaction", shap_values.values, X_resampled_t)
 
-# 6.4.2.2 Other Insights
-shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_scaledt)
+# See how people who work overtime will have less time to train
+shap.dependence_plot("TrainingTimesLastYear", shap_values.values, X_resampled_t)
+
+# 6.4.3.2 Other Insights
+shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_t)
 
 # Most Important Features :
     # - People who are a Research Scientist tend to have a much lesser chance to leave the company
@@ -1227,3 +1244,75 @@ shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_scaledt
 #Estratégia para reduzir Distance From Home -> Teletrabalho, o que melhora o EnvironmentSatisfaction ; Grupo de boleias ou empresa oferecer transporte
 #Estratégia para reduzir OverTime que aumenta JobSatisfaction que aumenta JobInvolvement -> Introduzir metodologia Agile de modo a que cada tarefa esteja partida em tarefas mais pequenas e melhora a organização dentro de equipas
 #Estratégia para aumentar StockOptionLevel e JobInvolvement -> Prémio por performance elevada ser ações da empresa.
+
+# 6.4.3 Explaining Individual Employee Predictions
+
+# 6.4.3.1 Most Extreme Examples
+
+# Predict probabilities. An Array with 2 dimensions will be returned. 
+#   1 dimension for the probability of attrition = 0 and 1 dimension for attrition = 1
+attrition_probabilities_all = final_model.predict_proba(X_resampled_scaledt)  
+
+# Predict Probability of Attrition = 1 ONLY (second dimension with index 1)
+attrition_probabilities = attrition_probabilities_all[:, 1]
+
+# Get indices of extreme cases
+most_likely_attrition_idx = attrition_probabilities.argmax()  # Highest probability index
+least_likely_attrition_idx = attrition_probabilities.argmin()  # Lowest probability index
+
+# Get probability of extreme cases
+most_likely_attrition = attrition_probabilities[most_likely_attrition_idx]*100  # Highest probability
+least_likely_attrition = attrition_probabilities[least_likely_attrition_idx]*100  # Lowest probability
+
+# Retrieve the corresponding real data points, NOT SCALED
+extreme_high = X_resampled_t.iloc[most_likely_attrition_idx]
+extreme_low = X_resampled_t.iloc[least_likely_attrition_idx]
+
+# Compute SHAP values (need to use scaled data here)
+shap_values_high = explainer(X_resampled_scaledt.iloc[[most_likely_attrition_idx]])
+shap_values_low = explainer(X_resampled_scaledt.iloc[[least_likely_attrition_idx ]])
+
+# Extreme Attrition = 1
+
+# FORCE PLOTS
+# f(x) is the log odd. E[g(x)] is the base log odd - it should be 0. But since we are trying to increase our recall
+    # the base log odd is negative, meaning that the prediction is slighly imbalanced towards attrition = 1
+shap.force_plot(
+    explainer.expected_value,
+    shap_values_high.values[0],  # Scaled Data to quantify the contribution of each feature correctly
+    extreme_high,  # Not Scaled Data in a human-readable format for the visualization,
+    link = "logit"
+)
+
+#WATERFALL PLOTS
+# Replace scaled data with original values for most likely attrition
+shap_values_high_original = shap.Explanation(
+    values=shap_values_high.values[0],
+    base_values=shap_values_high.base_values[0],
+    data=extreme_high.values,
+    feature_names=extreme_high.index
+)
+# Waterfall plot for most likely attrition
+shap.plots.waterfall(shap_values_high_original)
+
+# Extreme Attrition = 0
+# FORCE PLOTS
+shap.force_plot(
+    explainer.expected_value,
+    shap_values_low.values[0],
+    extreme_low,
+    link="logit"
+)
+print("Least Likely Probability:", least_likely_attrition)
+
+#WATERFALL PLOTS
+# Replace scaled data with original values for least likely attrition
+shap_values_low_original = shap.Explanation(
+    values=shap_values_low.values[0],
+    base_values=shap_values_low.base_values[0],
+    data=extreme_low.values,
+    feature_names=extreme_low.index
+)
+# Waterfall plot for least likely attrition
+shap.plots.waterfall(shap_values_low_original)
+
