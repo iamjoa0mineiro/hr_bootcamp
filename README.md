@@ -1,114 +1,74 @@
-# hr_bootcamp
-HR Bootcamp 2024
+# HR Attrition Project
 
-# Instalações a serem realizadas no terminal:
-pip install matplotlib seaborn squarify scikit-learn scipy
-pip install polars
-pip install scipy polars
-pip install shap
+## Table of Contents
+1. [Project's Title](#projects-title)
+2. [Project Description](#project-description)
+3. [How to Install and Run the Project](#how-to-install-and-run-the-project)
+4. [How to Use the Project](#how-to-use-the-project)
+5. [Credits](#credits)
+6. [License](#license)
 
-# Versões:
-matplotlib 3.9.2
-pandas 2.2.3
-seaborn 0.13.2
-numpy 2.1.2
+## Project's Title
+HR Attrition Project: Employee Attrition Prediction and Analysis
 
-# Notas para o modelo:
-Outliers - correr código com e sem outliers
+## Project Description
+The HR Attrition Project focuses on analyzing and predicting employee turnover through data-driven techniques. Using advanced data analysis, machine learning models, and visualization tools, it uncovers key factors driving attrition and provides actionable insights to address them.
 
-12/10/2024 - João Mineiro
+**What the project does:**
+- Analyzes HR data to understand attrition trends.
+- Builds machine learning models to predict employee attrition.
+- Visualizes key insights with user-friendly graphs and interactive plots.
 
-Boas malta, tentei deixar o código documentado ao máximo com comentários. Se puderem façam o mesmo!
-Apenas algumas notas importantes:
-1. Data Collection and Initial Processing:
-- Dataset Overview - DONE
-- Data Overview - DONE
-- Data Description - DONE
-- Preprocessing - DONE
+**Why these technologies:**
+- **Python:** Widely used for machine learning and data analysis.
+- **Pandas & NumPy:** For data manipulation and numerical computations.
+- **Matplotlib & Seaborn:** For static and interactive data visualizations.
+- **Scikit-learn:** To implement various machine learning algorithms.
+- **SHAP:** For interpretability of machine learning models.
 
-2. Exploratory Data Analysis (EDA):
-- Unvariate Analysis - DONE - Removeu-se 83 outliers depois de fazer análise com z-score
-- Bivariate and Multivariate Analysis - DONE -  Fiz apenas heatmap. Raysa: Adicionei alguns gráficos e deixei o que estava embaixo, mas ainda vou terminar. João Grade: Corri DecisionTrees para ver quais remover face a correlation analysis e corri embedded e wrapped methods para ver quais as variáveis a remover. 
-- Visualization - DONE
-- Feature Engeneering - !!!NOT DONE!!!
+**Challenges faced:**
+- Selecting optimal features for predictive accuracy.
+- Handling imbalanced datasets during prediction modeling.
+- Interpreting machine learning models effectively.
 
-26/10/2024
-1.	Split test & train sets
-2.	Feature importance no training set – aplicar remoção de variáveis em ambos os sets – train e test 
-3.	Aplicar SMOTE NC no train set – Resultado: Train set balanced ready for data modeling
+## How to Install and Run the Project
 
-26/10/2024 - Joao M. & Joao G.
-Feature selection based on Chi-Square, Spearman Corr. + DT, RFE, Lasso, DT --> Final decision was 2 train dfs:
-1) X_train1 --> Dropping just the variables to remove
-2) X_train2 --> Dropping variables to remove and to try
+1. Install [Python 3.11](https://www.python.org/downloads/release/python-3110/).
+2. Ensure `pip` is updated:
+```bash
+python -m pip install --upgrade pip
+```
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-27/10/2024 - Bruno (Nova versão - não estava a conseguir perceber o código)
-Feature selection organizada em numerical e categorical features
-Spearman Correlation Analysis: DT summary table para perceber melhor que variáveis correlacionadas devem ser removidas
-Final Analysis - adicionei summary table e mudei uma beca o codigo. Usei muito ChatGPT, por isso se conseguirem revejam o código só para o caso.
-Recomendação: 
-    remover variance analysis (não nos traz nada, não precisamos de manter no código)
-    usar MIC
+## How to Use the Project
+1. Open the terminal and navigate to the project folder:
+```bash
+cd hr_bootcamp
+```
 
-3/11/2024 - Joao M.
-Adicionei o código do MIC - falta pensarmos num critério de variables to keep/exclude
+2. Run the main script:
+```bash
+python hr_bootcamp_v5.py
+```
 
-04/11/2024 - Bruno
-MIC DONE
-Feature Selection for Categorical Variables is finished
-New variable for the random state r_state = 99.
+3. Outputs include:
+- **Interactive Visualizations:** Explore trends like attrition vs. department, age, etc.
+- **odel Evaluation Metrics:** View confusion matrices, precision-recall scores, and F1 scores.
+- **SHAP Interpretations:** Understand the impact of various features on predictions.
 
-08/11_2024 - Raysa
-Modelling
 
-Next Steps:
-- Use X_to_train
-- SMOTE or SMOTE NC - FEITO
-- One Hot Encoding (create dummies) - FEITO
-- Scale the variables (use MinMaxScaler) - we can use more models - FEITO
-- Apply the models 
+## Credits
 
-11/11/2024 - João Grade
+#### Group Number: EDSB24Q
 
-One Hot Enconding : Teve que se fazer antes do Smote NC porque ele não compreende variáveis categóricas com strings, têm que se integers. O próprio SMOTE NC faz, mas optei por fazer antes para poder ver o que ele estava a fazer
-SMOTE NC feito: para não haver problemas de versões, corram isto: pip install --upgrade imbalanced-learn scikit-learn numpy
-MinMax Scaler: Tem que se fazer só às numerical variables, não se pode fazer a variáveis binárias. O MinMax Scaler pega em variáveis numéricas e transforma-as em variáveis entre 0 e 1, o que faz sentido em variáveis numéricas. Ora, se fizermos isso em variáveis binárias, elas perdem o seu significado, porque o valor ou é (1) ou não é (0), não faz sentido ter o valor de 0,5. Do que pesquisei tanto em artigos como no stackoverflow a opinião global é que standardizar dados só se faz em variáveis numéricas, não se faz em variáveis binárias por perderem o significado. 
+#### Contributors:
+  * Bruno Tereso (20231432)
+  * João Grade (20231116)
+  * João Mineiro (20231426)
+  * Raysa Rocha (20232051)
 
-- Modelos de classificação que podemos usar tendo em conta que temos variáveis numéricas e binárias:
-    - Logistic Regression - Joao G. - Feito
-    - Decision Trees - Joao G. - Feito
-    - Random Forests - Joao M. - Feito
-    - Gradient Boosting - Bruno T. - Feito
-    - Support Vector Machine (SVM) - Joao M. - Feito
-    - Neural Networks - Raysa - Feito
-    - Naive Bayes - Bruno T. - Feito
-
-Organizar o código dos modelosn a seguinte ordem, só com o dataset de Keep+Try: 
-
-- GridSearch com todos -> FEITO
-- Comparação Train/Validation com todos -> FEITO
-- ROC Curve com todos -> FEITO
-- Ajustar Threshold do modelo que ganhou no ROC Curve -> FEITO
-
-Modelo escolhido ver resultados com test set: -> FEITO
-- Accuracy 
-- Balanced Accuracy
-- F1 Score
-- Precision
-- Recall 
-
-18/11/2024: Test feito, é necessário decidir entre o modelo LogR e SVM. Ambos têm accuracies parecidas, a decisão acaba por ser se preferimos Recall ou Precision mais alta. 
-
-19/11/2024 (Bruno)
-- Melhorei os modelos de NN, GB and RF. Infelizmente não consegui obter resultados melhores que o LogR.
-- Confusion Matrix
-- SHAP para a apresentação
-
-Next Steps: Desenvolver apresentação usando SHAP.
-
-Next Steps 23/11/2024
-
-- João Mineiro -> Organizar repositório, criar virtual environment e adaptar o código 
-- Bruno -> Acabar gráficos individuais do SHAP
-- Raysa -> Organizar Requirements 
-- João Grade -> Começar estrutura da apresentação, fazer slides de back-up (passos técnicos)
+## License
+This project is licensed under the [MIT Licence](https://choosealicense.com/licenses/mit/)
