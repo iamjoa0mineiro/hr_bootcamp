@@ -20,9 +20,12 @@ from sklearn.preprocessing import RobustScaler, LabelEncoder, OneHotEncoder, Min
 from sklearn.linear_model import LogisticRegression, LassoCV
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import (
     classification_report, confusion_matrix, f1_score, roc_curve, roc_auc_score, 
-    precision_recall_curve, accuracy_score, recall_score, precision_score
+    precision_recall_curve, accuracy_score, recall_score, precision_score, ConfusionMatrixDisplay
 )
 from sklearn.feature_selection import mutual_info_classif, RFE, VarianceThreshold
 from imblearn.over_sampling import SMOTENC
