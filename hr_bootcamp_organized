@@ -42,7 +42,7 @@ import shap
 # :::::::::::::::::::::::::::::::::::::::::::::::::
 
 # =================================================
-# 2.1. Dataset Overview
+# 2.1 Dataset Overview
 # =================================================
 
 # Loading the dataset
@@ -50,7 +50,7 @@ hr = pd.read_csv('HR_Attrition_Dataset.csv')
 hr.head()
 
 # =================================================
-# 2.2. Data Description
+# 2.2 Data Description
 # =================================================
 
 # Information about the DataFrame
@@ -69,7 +69,7 @@ for column in categorical_columns:
     print(f"Unique values for '{column}': {hr[column].unique()}")
 
 # =================================================
-# 2.3. Data Preprocessing
+# 2.3 Data Preprocessing
 # =================================================
 
 # Dropping columns with limited utility (constant value or irrelevant information)
@@ -102,11 +102,11 @@ print(hr.head())
 # :::::::::::::::::::::::::::::::::::::::::::::::::
 
 # =================================================
-# 3.1. Visualization
+# 3.1 Visualization
 # =================================================
 
 # -------------------------------------------------
-# 3.1.1. Company's Age Analysis
+# 3.1.1 Company's Age Analysis
 # -------------------------------------------------
 
 # Calculate the Percentage of Each Age Group in the Dataset
@@ -126,7 +126,7 @@ plt.xlabel('Age Group')
 plt.show()
 
 # -------------------------------------------------
-# 3.1.2. Percentage of Employees by Marital Status
+# 3.1.2 Percentage of Employees by Marital Status
 # -------------------------------------------------
 
 # Calculate the percentage for each marital status
@@ -145,7 +145,7 @@ plt.xlabel('Percentage (%)')
 plt.show()
 
 # -------------------------------------------------
-# 3.1.3. Number of Employees by Department
+# 3.1.3 Number of Employees by Department
 # -------------------------------------------------
 
 # Using original categorical values
@@ -165,7 +165,7 @@ plt.axis('off')
 plt.show()
 
 # -------------------------------------------------
-# 3.1.4. Attrition Evaluation
+# 3.1.4 Attrition Evaluation
 # -------------------------------------------------
 
 # Attrition Distribution Plot
@@ -184,11 +184,11 @@ plt.show()
 
 
 # =================================================
-# 3.2. Univariate Data Analysis
+# 3.2 Univariate Data Analysis
 # =================================================
 
 # -------------------------------------------------
-# 3.2.1. Visualize Data Distribution (Histograms)
+# 3.2.1 Visualize Data Distribution (Histograms)
 # -------------------------------------------------
 
 # Set the style for better visualization
@@ -223,7 +223,7 @@ plt.tight_layout()
 plt.show()
 
 # -------------------------------------------------
-# 3.2.2. Boxplot Analysis for Outlier Detection
+# 3.2.2 Boxplot Analysis for Outlier Detection
 # -------------------------------------------------
 
 # Update numerical columns after dropping 'AgeGroup'
@@ -252,7 +252,7 @@ plt.tight_layout()
 plt.show()
 
 # -------------------------------------------------
-# 3.2.3. Outlier Detection Using Z-Score Method
+# 3.2.3 Outlier Detection Using Z-Score Method
 # -------------------------------------------------
 
 # Detect outliers using the Z-score method
@@ -277,7 +277,7 @@ hr_nout = hr.drop(index=outlier_employee_numbers)
 print(f"Dataframe after removing outliers: {hr_nout.shape[0]} rows remaining")
 
 # =================================================
-# 3.3. Bivariate Data Analysis
+# 3.3 Bivariate Data Analysis
 # =================================================
 
 # -------------------------------------------------
@@ -371,34 +371,34 @@ def attrition_boxplot(y_column):
 # Boxplot analysis for selected numerical variables
 # Attrition vs. Monthly Income
 attrition_boxplot('MonthlyIncome')
-# INSIGHT: Employees with lower monthly incomes tend to leave the company, while higher incomes are associated with staying.
+# Insight: Employees with lower monthly incomes tend to leave the company, while higher incomes are associated with staying.
 
 # Attrition vs. Years at Company
 attrition_boxplot('YearsAtCompany')
-# INSIGHT: Employees who leave tend to have fewer years of experience at the company.
+# Insight: Employees who leave tend to have fewer years of experience at the company.
 
 # Attrition vs. Total Working Years
 attrition_boxplot('TotalWorkingYears')
-# INSIGHT: Employees with longer career experience tend to stay longer, while those with fewer total working years are more likely to leave.
+# Insight: Employees with longer career experience tend to stay longer, while those with fewer total working years are more likely to leave.
 
 # Attrition vs. YearsInCurrentRole
 attrition_boxplot('YearsInCurrentRole')
-# INSIGHT: Employees who have been in their current role for a shorter time tend to leave more often.
+# Insight: Employees who have been in their current role for a shorter time tend to leave more often.
 
 # Attrition vs. YearsSinceLastPromotion
 attrition_boxplot('YearsSinceLastPromotion')
-# INSIGHT: Employees who have not been promoted recently are more likely to leave.
+# Insight: Employees who have not been promoted recently are more likely to leave.
 
 # Attrition vs. YearsWithCurrManager
 attrition_boxplot('YearsWithCurrManager')
-# INSIGHT: Employees with fewer years with their current manager show a higher tendency to leave.
+# Insight: Employees with fewer years with their current manager show a higher tendency to leave.
 
 # :::::::::::::::::::::::::::::::::::::::::::::::::
 # SECTION 4: Feature Selection
 # :::::::::::::::::::::::::::::::::::::::::::::::::
 
 # =================================================
-# 4.1. Splitting the Dataset
+# 4.1 Splitting the Dataset
 # =================================================
 
 # Define Features (X) and Target (y)
@@ -415,7 +415,7 @@ r_state = 99
 skf = StratifiedKFold(n_splits=10, random_state=r_state, shuffle=True)
 
 # =================================================
-# 4.2. Categorical Variables
+# 4.2 Categorical Variables
 # =================================================
 
 # -------------------------------------------------
@@ -462,7 +462,7 @@ def select_best_cat_features(X, y):
 # Apply Chi-Square
 selected_categorical_features = select_best_cat_features(X_train, y_train)
 
-# INSIGHT: Drop the following columns --> ['Gender', 'EducationField']
+# Insight: Drop the following columns --> ['Gender', 'EducationField']
 
 # -------------------------------------------------
 # 4.2.2 MIC
@@ -508,7 +508,7 @@ def calculate_mic_with_cv(X, y, skf):
 # Use the defined StratifiedKFold for 10-fold cross-validation
 mic_scores_df = calculate_mic_with_cv(X_train[categorical_features], y_train, skf)
 
-# INSIGHT: Drop the following columns --> ['Gender', 'Department', 'EducationField'] because treshold MIC score is lower than 0.1
+# Insight: Drop the following columns --> ['Gender', 'Department', 'EducationField'] because treshold MIC score is lower than 0.1
 
 # -------------------------------------------------
 # 4.2.3 Results - Categorical Features to drop
@@ -518,7 +518,7 @@ mic_scores_df = calculate_mic_with_cv(X_train[categorical_features], y_train, sk
 X_train_categorical.drop(['Gender','Department', 'EducationField'], axis=1, inplace=True)
 
 # =================================================
-# 4.3. Numerical Features
+# 4.3 Numerical Features
 # =================================================
 
 # -------------------------------------------------
@@ -599,7 +599,7 @@ plt.ylabel("Features")
 plt.tight_layout()
 plt.show()
 
-# INSIGHT: Drop the following columns --> ['YearsInCurrentRole', 'JobLevel', 'YearsAtCompany']
+# Insight: Drop the following columns --> ['YearsInCurrentRole', 'JobLevel', 'YearsAtCompany']
 X_train.drop(['YearsInCurrentRole', 'JobLevel', 'YearsWithCurrManager'], axis=1, inplace=True)
 
 # Update numerical columns after dropping correlated features
@@ -662,7 +662,9 @@ select_features_variance(X_train_numerical, y_train, threshold=0.03)
 # 4.3.3 RFE, Lasso, DT Models with 10 Splits
 # -------------------------------------------------
 
-# RFE
+# 4.3.3.1 RFE
+#..................................................
+
 def apply_rfe(X_train, y_train, n_features_to_select=5):
     # Applying RFE with Logistic Regression as the base model
     rfe = RFE(estimator=LogisticRegression(max_iter=1000, random_state=42), n_features_to_select=n_features_to_select)
@@ -670,14 +672,18 @@ def apply_rfe(X_train, y_train, n_features_to_select=5):
     # Convert True/False to 1/0
     return pd.Series(rfe.support_, index=X_train.columns).astype(int)
 
-# Lasso 
+# 4.3.3.2 Lasso 
+#..................................................
+
 def apply_lasso(X_train, y_train):
     # Applying Lasso for feature selection
     lasso = LassoCV(cv=5, random_state=42).fit(X_train, y_train)
     # Convert non-zero coefficients to 1 and zero coefficients to 0
     return pd.Series(lasso.coef_, index=X_train.columns).apply(lambda x: 1 if x != 0 else 0)
 
-# Decision Tree
+# 4.3.3.3 Decision Tree
+#..................................................
+
 def apply_dt(X_train, y_train):
     # Applying Decision Tree for feature importance
     dt = DecisionTreeClassifier(random_state=42).fit(X_train, y_train)
@@ -688,7 +694,9 @@ def apply_dt(X_train, y_train):
     # Mark top 10 features as 1 and others as 0
     return feature_importances.apply(lambda x: 1 if feature_importances.index[feature_importances == x][0] in top_10_features else 0)
 
-# Result
+# 4.3.3.4 Result
+#..................................................
+
 def select_best_features(X, y):
     all_features = X.columns
     results = pd.DataFrame(index=all_features)
@@ -1102,7 +1110,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratif
 # Applying the same transformations as previously on train and test set: SMOTE NC and MinMaxScaler
 
 # -------------------------------------------------
-# 6.1.1. Transformations on the Train Set
+# 6.1.1 Transformations on the Train Set
 # -------------------------------------------------
 
 # One-Hot Encode categorical features
@@ -1131,7 +1139,7 @@ X_binaryf = X_resampledf.drop(columns=numerical_features)  # Extract binary/cate
 X_resampled_scaledf = pd.concat([X_numerical_scaled_dff, X_binaryf], axis=1)  # Combine scaled numerical and binary data
 
 # -------------------------------------------------
-# 6.1.2. Transformations on the Test Set
+# 6.1.2 Transformations on the Test Set
 # -------------------------------------------------
 
 # One-Hot Encode categorical features
@@ -1193,8 +1201,8 @@ metrics_table = pd.DataFrame(list(metrics.items()), columns=["Metric", "Value"])
 print(metrics_table)
 
 # Displaying example results for Logistic Regression and other models:
-# LOGR Results:
-#                 Metric         Value
+# LogR Results:
+#               Metric         Value
 # 0            F1 Score     0.816754
 # 1      Accuracy Score     0.810811
 # 2     Precision Score     0.791878
@@ -1202,28 +1210,28 @@ print(metrics_table)
 
 # Example results for comparison:
 # SVM Results:
-#                 Metric         Value
+#               Metric         Value
 # 0            F1 Score     0.786026
 # 1      Accuracy Score     0.801351
 # 2     Precision Score     0.851735
 # 3        Recall Score     0.729730
 
 # GB Results:
-#                 Metric         Value
+#               Metric         Value
 # 0            F1 Score     0.801027
 # 1      Accuracy Score     0.790541
 # 2     Precision Score     0.762836
 # 3        Recall Score     0.843243
 
 # RF Results:
-#                 Metric         Value
+#               Metric         Value
 # 0            F1 Score     0.778846
 # 1      Accuracy Score     0.751351
 # 2     Precision Score     0.701299
 # 3        Recall Score     0.875676
 
 # NN Results:
-#                 Metric         Value
+#               Metric         Value
 # 0            F1 Score     0.812332
 # 1      Accuracy Score     0.810811
 # 2     Precision Score     0.805851
@@ -1249,30 +1257,51 @@ plt.show()
 # =================================================
 
 # -------------------------------------------------
-# 6.5.1 Applying SHAP
+# 6.5.1 Removing MinMaxScaler for better readability from X_Test
 # -------------------------------------------------
 
-# Apply SHAP to explain model predictions
-explainer = shap.Explainer(final_model, X_resampled_scaledf)
+# Inverse MinMaxScaler
+X_numerical_original = scaler.inverse_transform(X_resampled_scaledt[numerical_features])
+X_numerical_original_t = pd.DataFrame(X_numerical_original, columns=numerical_features)
+
+# Extract encoded categorical features
+X_encoded_categorical_t = X_resampled_scaledt.drop(columns=numerical_features)
+
+# Combine both into a dataframe. Now, we have a df resampled, but not scaled
+X_resampled_t = pd.concat([X_numerical_original_t, X_encoded_categorical_t], axis=1)
+
+# -------------------------------------------------
+# 6.5.2 Applying SHAP
+# -------------------------------------------------
+
+# Apply SHAP to explain model predictions using the test scaled data
+# Note: data needs to be scaled for SHAP
+explainer = shap.Explainer(final_model, X_resampled_scaledt, model_output="probability")
 shap_values = explainer(X_resampled_scaledt)
 
 # Visualize SHAP values
 shap.plots.violin(shap_values, max_display=10)
 
 # -------------------------------------------------
-# 6.5.2 Insights
+# 6.5.3 Insights
 # -------------------------------------------------
 
-# 6.5.2.1 Why is it so important to address overtime?
+# 6.5.3.1 Why is it so important to address overtime?
+# .................................................
 
-# Analyze the impact of job satisfaction on employees working overtime
-shap.dependence_plot("JobSatisfaction", shap_values.values, X_resampled_scaledt)
-# Analyze how employees working overtime have less time for training
-shap.dependence_plot("TrainingTimesLastYear", shap_values.values, X_resampled_scaledt)
+# Note: Dependence plots will use the values from not scaled data, to check the real values
 
-# 6.5.2.2 Additional Insights
+# See how job satisfaction is amplified by whether employees work overtime
+shap.dependence_plot("JobSatisfaction", shap_values.values, X_resampled_t)
 
-shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_scaledt)
+# See how people who work overtime will have less time to train
+shap.dependence_plot("TrainingTimesLastYear", shap_values.values, X_resampled_t)
+
+# 6.5.3.2 Additional Insights
+# .................................................
+
+# Plotting the effect of distance from home on attrition
+shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_t)
 
 # Most Important Features :
     # - People who are a Research Scientist tend to have a much lesser chance to leave the company
@@ -1287,3 +1316,85 @@ shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_scaledt
 # Estratégia para reduzir Distance From Home -> Teletrabalho, o que melhora o EnvironmentSatisfaction ; Grupo de boleias ou empresa oferecer transporte
 # Estratégia para reduzir OverTime que aumenta JobSatisfaction que aumenta JobInvolvement -> Introduzir metodologia Agile de modo a que cada tarefa esteja partida em tarefas mais pequenas e melhora a organização dentro de equipas
 # Estratégia para aumentar StockOptionLevel e JobInvolvement -> Prémio por performance elevada ser ações da empresa.
+
+# -------------------------------------------------
+# 6.5.4 Explaining Individual Employee Predictions
+# -------------------------------------------------
+
+# 6.5.4.1 Identifying the Most Extreme Examples
+# .................................................
+
+# Predict probabilities for attrition (an array with two columns, one for attrition = 0, one for attrition = 1)
+attrition_probabilities_all = final_model.predict_proba(X_resampled_scaledt)
+
+# Extract probabilities for Attrition = 1 (using the second column, index 1)
+attrition_probabilities = attrition_probabilities_all[:, 1]
+
+# Identify indices for the most extreme cases
+most_likely_attrition_idx = attrition_probabilities.argmax()  # Highest probability index
+least_likely_attrition_idx = attrition_probabilities.argmin()  # Lowest probability index
+
+# Get probabilities for the extreme cases (convert to percentages)
+most_likely_attrition = attrition_probabilities[most_likely_attrition_idx]*100  # Highest probability
+least_likely_attrition = attrition_probabilities[least_likely_attrition_idx]*100  # Lowest probability
+
+# Retrieve the corresponding real data points (unscaled) for interpretation
+extreme_high = X_resampled_t.iloc[most_likely_attrition_idx]
+extreme_low = X_resampled_t.iloc[least_likely_attrition_idx]
+
+# 6.5.4.2 Computing SHAP Values for Extreme Examples
+# .................................................
+
+# Compute SHAP values for the most extreme cases (using scaled data for SHAP)
+shap_values_high = explainer(X_resampled_scaledt.iloc[[most_likely_attrition_idx]])
+shap_values_low = explainer(X_resampled_scaledt.iloc[[least_likely_attrition_idx ]])
+
+# 6.5.4.3 SHAP Visualization for Most Likely Attrition Example
+# .................................................
+
+# Force plot for the most likely attrition (Attrition = 1)
+# Note: f(x) is the log-odd, and E[g(x)] is the base log-odd. Since we are trying to increase recall, the base log-odd may be slightly negative.
+shap.force_plot(
+    explainer.expected_value,
+    shap_values_high.values[0],  # Scaled Data to quantify the contribution of each feature correctly
+    extreme_high,  # Not Scaled Data in a human-readable format for the visualization,
+    link = "logit"
+)
+
+# Waterfall plot for the most likely attrition (Attrition = 1)
+# Create SHAP Explanation object with original values for better interpretability
+shap_values_high_original = shap.Explanation(
+    values=shap_values_high.values[0],
+    base_values=shap_values_high.base_values[0],
+    data=extreme_high.values,
+    feature_names=extreme_high.index
+)
+
+# Waterfall plot for the most likely attrition example
+shap.plots.waterfall(shap_values_high_original)
+
+
+# 6.5.4.4 SHAP Visualization for Least Likely Attrition Example
+# .................................................
+
+# Force plot for the least likely attrition (Attrition = 0)
+shap.force_plot(
+    explainer.expected_value,
+    shap_values_low.values[0],
+    extreme_low,
+    link="logit"
+)
+
+print("Least Likely Probability:", least_likely_attrition)
+
+# Waterfall plot for the least likely attrition (Attrition = 0)
+# Create SHAP Explanation object with original values for better interpretability
+shap_values_low_original = shap.Explanation(
+    values=shap_values_low.values[0],
+    base_values=shap_values_low.base_values[0],
+    data=extreme_low.values,
+    feature_names=extreme_low.index
+)
+
+# Waterfall plot for the least likely attrition example
+shap.plots.waterfall(shap_values_low_original)
