@@ -1,0 +1,2 @@
+Usar scaler to training no test
+Tirar SMOTE NC do TEst
