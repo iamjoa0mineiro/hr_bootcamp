@@ -1115,10 +1115,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratif
 
 # One-Hot Encode categorical features
 X_categorical_featuresf = X_train[categorical_columns]
-encoderf = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featuresf)
+encoder = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featuresf)
 X_train_encoded_catf = pd.DataFrame(
-    encoderf.transform(X_categorical_featuresf),
-    columns=encoderf.get_feature_names_out(categorical_columns),
+    encoder.transform(X_categorical_featuresf),
+    columns=encoder.get_feature_names_out(categorical_columns),
     index=X_categorical_featuresf.index
 )
 X_train_encoded_catf = X_train_encoded_catf.astype(int)  # Convert encoded features to integers
@@ -1127,7 +1127,7 @@ X_train_final_keepf = pd.concat([X_no_categoricalf, X_train_encoded_catf], axis=
 
 # SMOTENC to solve class imbalance in the train set
 categorical_column_indices = [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]  # Indices of categorical features
-smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
+# smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
 X_resampledf, y_resampledf = smote_nc.fit_resample(X_train_final_keepf, y_train)
 
 # Scale numerical features using MinMaxScaler
@@ -1144,10 +1144,10 @@ X_resampled_scaledf = pd.concat([X_numerical_scaled_dff, X_binaryf], axis=1)  # 
 
 # One-Hot Encode categorical features
 X_categorical_featurest = X_test[categorical_columns]
-encodert = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featurest)
+# encodert = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_featurest)
 X_test_encoded_cat = pd.DataFrame(
-    encodert.transform(X_categorical_featurest),
-    columns=encodert.get_feature_names_out(categorical_columns),
+    encoder.transform(X_categorical_featurest),
+    columns=encoder.get_feature_names_out(categorical_columns),
     index=X_categorical_featurest.index
 )
 X_test_encoded_cat = X_test_encoded_cat.astype(int)  # Convert encoded features to integers
