@@ -1,3 +1,3 @@
-Usar scaler to training no test
-Tirar SMOTE NC do TEst
 Testar sem os outliers
+Remove one hot encoding - use just SMOTE NC
+Try combination of features
