@@ -406,7 +406,7 @@ X = hr.drop(columns=['Attrition'])
 y = hr['Attrition']
 
 # Split into Train and Test Sets (70% training, 30% testing)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify=y, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
 # Set global random state for reproducibility
 r_state = 99
@@ -741,6 +741,7 @@ numerical_ranking['Decision'] = np.select(
 print(numerical_ranking)
 
 # Define lists of variables to keep or try based on the ranking
+variables_to_try = numerical_ranking[numerical_ranking['Decision'] == 'try'].index.tolist()
 variables_to_keep = numerical_ranking[numerical_ranking['Decision'] == 'keep'].index.tolist() + X_train_categorical.columns.tolist()
 variables_to_try_and_keep = numerical_ranking[numerical_ranking['Decision'].isin(['keep', 'try'])].index.tolist() + X_train_categorical.columns.tolist()
 
@@ -765,8 +766,8 @@ X_train_try_and_keep = X_train[variables_to_try_and_keep]
 X_to_train = X_train_try_and_keep.copy()
 
 # Apply one-hot encoding to categorical features before applying SMOTENC
-categorical_columns = ['BusinessTravel', 'JobRole', 'MaritalStatus', 'OverTime']
-X_categorical_features = X_to_train[categorical_columns]
+categorical_columns = X_train_categorical.columns.tolist()
+X_categorical_features = X_train_categorical
 # Fit the OneHotEncoder to transform categorical variables into binary indicators
 encoder = OneHotEncoder(drop='first', sparse_output=False).fit(X_categorical_features)
 X_train_encoded_cat = pd.DataFrame(
@@ -783,14 +784,14 @@ X_no_categorical = X_to_train.drop(columns=categorical_columns)
 X_train_final_keep = pd.concat([X_no_categorical, X_train_encoded_cat], axis=1)
 
 # Define the indices of categorical columns for SMOTENC
-categorical_column_indices=[14,15,16,17,18,19,20,21,22,23,24,25,26]
+categorical_column_indices = list(range(len(X_no_categorical.columns), X_train_final_keep.shape[1]))
 
 # Apply SMOTENC to address class imbalance in the target variable 
 smote_nc = SMOTENC(categorical_features=categorical_column_indices, random_state=99)
 X_resampled, y_resampled = smote_nc.fit_resample(X_train_final_keep, y_train)
 
 # Normalize numerical features using MinMaxScaler
-numerical_features = ['Age', 'DailyRate','DistanceFromHome','EnvironmentSatisfaction','HourlyRate','JobInvolvement','JobSatisfaction','MonthlyIncome','NumCompaniesWorked','PercentSalaryHike','StockOptionLevel','TotalWorkingYears','TrainingTimesLastYear','YearsAtCompany']
+numerical_features = X_to_train.drop(columns=categorical_columns).columns.tolist()
 X_numerical = X_resampled[numerical_features]
 scaler = MinMaxScaler()
 X_numerical_scaled = scaler.fit_transform(X_numerical)
