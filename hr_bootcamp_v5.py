@@ -182,6 +182,69 @@ plt.xlabel('Attrition')
 plt.ylabel('Number of Employees')
 plt.show()
 
+# -------------------------------------------------
+# 3.1.5 Attrition Distribution
+# -------------------------------------------------
+
+# -------------------------------------------------
+# 3.1.5.1 Attrition Distribution on Numerical
+# -------------------------------------------------
+
+# Separate numerical and categorical columns
+numerical_columns = hr.select_dtypes(include=['float64', 'int64']).columns.tolist()
+categorical_columns = hr.select_dtypes(include=['object', 'category']).columns.tolist()
+
+# Remove the target column 'Attrition' from these lists if present
+numerical_columns = [col for col in numerical_columns if col != 'Attrition']
+categorical_columns = [col for col in categorical_columns if col != 'Attrition']
+
+# Create histograms for numerical variables
+for col in numerical_columns:
+    plt.figure(figsize=(10, 6))
+    data = hr.copy()
+    # Create bins
+    bins = 10 if data[col].nunique() > 10 else data[col].nunique()
+    data['bin'] = pd.cut(data[col], bins=bins)
+    attrition_dist = (
+        data.groupby('bin')['Attrition']
+        .value_counts(normalize=True)
+        .unstack()
+        .fillna(0)
+    )
+    attrition_dist = attrition_dist.reindex(columns=[0, 1])  # Ensure 0 and 1 order
+    
+    # Plot the histogram
+    attrition_dist.plot(kind='bar', stacked=True, figsize=(10, 6), width=0.8, alpha=0.8)
+    plt.title(f'Attrition Distribution for {col}')
+    plt.xlabel(f'{col} (binned)')
+    plt.ylabel('Proportion')
+    plt.legend(title='Attrition', labels=['0 (No)', '1 (Yes)'])
+    plt.xticks(rotation=45)
+    plt.show()
+
+# -------------------------------------------------
+# 3.1.5.2 Attrition Distribution on Categorical
+# -------------------------------------------------
+
+# Create bar plots for categorical variables
+for col in categorical_columns:
+    plt.figure(figsize=(10, 6))
+    attrition_dist = (
+        hr.groupby(col)['Attrition']
+        .value_counts(normalize=True)
+        .unstack()
+        .fillna(0)
+    )
+    attrition_dist = attrition_dist.reindex(columns=[0, 1])  # Ensure 0 and 1 order
+    
+    # Plot the bar chart
+    attrition_dist.plot(kind='bar', stacked=True, figsize=(10, 6), width=0.8, alpha=0.8)
+    plt.title(f'Attrition Distribution by {col}')
+    plt.xlabel(col)
+    plt.ylabel('Proportion')
+    plt.legend(title='Attrition', labels=['0 (No)', '1 (Yes)'])
+    plt.xticks(rotation=45)
+    plt.show()
 
 # =================================================
 # 3.2 Univariate Data Analysis
