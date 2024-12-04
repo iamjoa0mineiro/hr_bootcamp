@@ -1384,6 +1384,8 @@ shap.dependence_plot("DistanceFromHome", shap_values.values, X_resampled_t)
 # 6.5.4 Explaining Individual Employee Predictions
 # -------------------------------------------------
 
+shap.initjs()
+
 # 6.5.4.1 Identifying the Most Extreme Examples
 # .................................................
 
@@ -1461,3 +1463,32 @@ shap_values_low_original = shap.Explanation(
 
 # Waterfall plot for the least likely attrition example
 shap.plots.waterfall(shap_values_low_original)
+
+# 6.5.4.4 Final Example with random individual
+# .................................................
+
+# Random Index
+n=204
+
+idx_not_scaled = X_resampled_t.iloc[n]
+
+# 6.5.4.2 Computing SHAP Values for Extreme Examples
+# .................................................
+
+# Compute SHAP values for the most extreme cases (using scaled data for SHAP)
+shap_value_random_index = explainer(X_resampled_scaledt.iloc[[n]])
+
+
+# 6.5.4.3 SHAP Visualization for Most Likely Attrition Example
+# .................................................
+
+# Force plot for the most likely attrition (Attrition = 1)
+# Note: f(x) is the log-odd, and E[g(x)] is the base log-odd. Since we are trying to increase recall, the base log-odd may be slightly negative.
+shap.force_plot(
+    explainer.expected_value,
+    shap_value_random_index.values[0],  # Scaled Data to quantify the contribution of each feature correctly
+    idx_not_scaled,  # Not Scaled Data in a human-readable format for the visualization,
+    link = "logit"
+)
+print("Attrition:")
+print(y_resampledt.loc[204])
